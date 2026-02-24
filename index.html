@@ -315,6 +315,9 @@
                         <button onclick="exportAIReportWord()" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition font-medium text-sm flex items-center">
                             <i class="fa-solid fa-file-word mr-2"></i> Word
                         </button>
+                        <button onclick="exportAIReportPDF()" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center">
+                            <i class="fa-solid fa-file-pdf mr-2"></i> PDF
+                        </button>
                     </div>
 
                     <button onclick="generateAIReport()" id="aiBtn" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-medium shadow-lg flex items-center">
@@ -604,7 +607,8 @@
             }
 
             // Calculate KPI: Respondents
-            const respondents = new Set(filteredData.map(d => d.respondent)).size;
+            // นับจำนวนข้อทั้งหมดแล้วหาร 10 (1 คน = 10 ข้อ)
+            const respondents = Math.ceil(filteredData.length / 10);
             document.getElementById('kpiRespondents').innerText = respondents.toLocaleString();
 
             // Calculate KPI: Average Score
@@ -725,15 +729,27 @@
                     const stat = termYearStats[term][year];
                     return stat ? stat.sum / stat.count : null;
                 });
+
+                // หาค่าสูงสุดในข้อมูลของปีนั้นๆ เพื่อไฮไลท์จุดสีแดง
+                const validData = data.filter(v => v !== null);
+                const maxVal = validData.length > 0 ? Math.max(...validData) : null;
+                
+                const pointBgColors = data.map(v => (v !== null && v === maxVal) ? '#f43f5e' : colors[i % colors.length]);
+                const pointRadii = data.map(v => (v !== null && v === maxVal) ? 7 : 5);
+                const pointHoverRadii = data.map(v => (v !== null && v === maxVal) ? 9 : 8);
+
                 return {
                     label: `ปี ${year}`,
                     data: data,
                     borderColor: colors[i % colors.length],
                     backgroundColor: colors[i % colors.length],
+                    pointBackgroundColor: pointBgColors,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: pointRadii,
+                    pointHoverRadius: pointHoverRadii,
                     tension: 0.3,
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 8
+                    borderWidth: 3
                 };
             });
 
@@ -1033,6 +1049,110 @@
             fileDownload.download = `AI_Executive_Report_${Date.now()}.doc`;
             fileDownload.click();
             document.body.removeChild(fileDownload);
+        }
+
+        async function exportAIReportPDF() {
+            const content = document.getElementById('aiReportContent');
+            const aiText = document.getElementById('aiText').innerHTML;
+            
+            if(content.classList.contains('hidden') || !aiText) {
+                showMessage("ไม่มีข้อมูลรายงานสำหรับสร้าง PDF", "คำเตือน", "fa-triangle-exclamation");
+                return;
+            }
+
+            // จัดการเปลี่ยนสถานะปุ่มขณะโหลด
+            const btn = document.querySelector('button[onclick="exportAIReportPDF()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังสร้าง PDF...';
+            btn.disabled = true;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                // สร้างคอนเทนเนอร์ชั่วคราวสำหรับการจัดรูปแบบเพื่อพิมพ์ลง A4
+                const printContainer = document.createElement('div');
+                
+                // เพิ่มส่วนหัวของเอกสาร (Header) ให้ดูเป็นทางการ
+                const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                printContainer.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #1e3a8a; font-size: 28px; font-weight: bold; margin-bottom: 10px;">รายงานสรุปเชิงบริหาร (Executive Report)</h1>
+                        <p style="color: #475569; font-size: 16px;">ผลประเมินการจัดการเรียนการสอน | วิเคราะห์โดย Gemini AI</p>
+                        <p style="color: #94a3b8; font-size: 14px; margin-top: 5px;">วันที่ออกรายงาน: ${today}</p>
+                        <hr style="margin-top: 20px; border: 0; border-top: 2px solid #e2e8f0;">
+                    </div>
+                    ${aiText}
+                `;
+                
+                // ตั้งค่า CSS ให้ใกล้เคียงกับความกว้างหน้า A4 ป้องกัน Layout เพี้ยน
+                Object.assign(printContainer.style, {
+                    width: '800px', 
+                    padding: '40px 50px 80px 50px', // เพิ่ม padding ด้านล่างให้มีพื้นที่เหลือไม่ชิดขอบจนเกินไป
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    position: 'absolute',
+                    top: '0',
+                    left: '-9999px',
+                    zIndex: '-1',
+                    fontFamily: "'Prompt', sans-serif"
+                });
+                
+                // เรียกใช้คลาส prose เพื่อให้เนื้อหา Markdown คงรูปแบบเดิม
+                printContainer.className = 'prose prose-indigo max-w-none';
+                document.body.appendChild(printContainer);
+
+                // รอฟอนต์และเรนเดอร์เนื้อหาเล็กน้อย
+                await document.fonts.ready;
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // ถ่ายภาพ HTML
+                const canvas = await html2canvas(printContainer, { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    windowWidth: 800
+                });
+                
+                document.body.removeChild(printContainer);
+
+                const imgData = canvas.toDataURL('image/png');
+                
+                // คำนวณขนาดสำหรับหน้า A4 (แบ่งหน้าพร้อมกำหนดขอบกระดาษ)
+                const margin = 15; // กำหนดระยะขอบ 15mm ทุกด้าน
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const contentWidth = pdfWidth - (margin * 2);
+                const contentHeight = pdfHeight - (margin * 2);
+                
+                const imgWidth = contentWidth; 
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                let heightLeft = imgHeight;
+                let position = margin; // เริ่มต้นที่ระยะขอบบน
+
+                // วาดหน้าแรก
+                pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+                heightLeft -= contentHeight;
+
+                // หากเนื้อหายาวเกิน 1 หน้า ให้ตัดขึ้นหน้าใหม่
+                while (heightLeft > 0) {
+                    position = position - contentHeight; // ขยับภาพขึ้นตามความสูงเนื้อหาเพื่อต่อหน้าใหม่
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+                    heightLeft -= contentHeight;
+                }
+                
+                pdf.save(`AI_Executive_Report_${Date.now()}.pdf`);
+            } catch (error) {
+                console.error("AI Report PDF generation failed:", error);
+                showMessage("ไม่สามารถสร้างไฟล์ PDF ได้", "ข้อผิดพลาด", "fa-xmark");
+            } finally {
+                // คืนค่าปุ่มกลับเป็นปกติ
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
         }
 
         // --- Gemini AI ---
