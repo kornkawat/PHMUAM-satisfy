@@ -67,10 +67,20 @@
 <body class="text-gray-800 antialiased font-sans flex flex-col min-h-screen">
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm hidden">
         <div class="loader mb-4"></div>
-        <h2 class="text-brand-blue font-semibold text-xl" id="loadingText">กำลังซิงค์ข้อมูล...</h2>
+        <h2 class="text-brand-blue font-semibold text-xl" id="loadingText">กำลังประมวลผล...</h2>
         <p class="text-gray-500 mt-2 text-sm">กรุณารอสักครู่</p>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <div id="messageIcon" class="text-4xl mb-4 text-brand-blue"><i class="fa-solid fa-circle-info"></i></div>
+            <h2 id="messageTitle" class="text-xl font-bold mb-2 text-gray-800">แจ้งเตือน</h2>
+            <p id="messageBody" class="text-gray-600 mb-6"></p>
+            <button onclick="closeMessage()" class="px-6 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-800 transition font-medium w-full">ตกลง</button>
+        </div>
     </div>
 
     <!-- Login Modal -->
@@ -85,11 +95,11 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ใช้งาน</label>
-                    <input type="text" id="username" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกชื่อผู้ใช้งาน">
+                    <input type="text" id="username" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกชื่อผู้ใช้งาน (admin)">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
-                    <input type="password" id="password" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกรหัสผ่าน">
+                    <input type="password" id="password" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกรหัสผ่าน (admin)">
                 </div>
                 <div class="pt-4 flex gap-3">
                     <button onclick="closeLoginModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">ยกเลิก</button>
@@ -103,10 +113,21 @@
     <div id="dataModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 id="modalTitle" class="text-2xl font-bold text-brand-blue mb-6 border-b pb-3">จัดการข้อมูลแบบสอบถาม</h2>
-            <input type="hidden" id="editRowId">
+            <input type="hidden" id="editRespondentId">
             <input type="hidden" id="editModeType" value="add"> 
             
-            <div id="dynamicFormFields" class="space-y-4"></div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
+                    <input type="text" id="inputYear" class="w-full px-3 py-2 border rounded-lg" placeholder="เช่น 2566">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
+                    <input type="text" id="inputTerm" class="w-full px-3 py-2 border rounded-lg" placeholder="เช่น 1">
+                </div>
+            </div>
+
+            <div id="dynamicFormFields" class="space-y-4 bg-gray-50 p-4 rounded-xl border"></div>
             
             <div class="pt-6 mt-6 border-t flex gap-3">
                 <button onclick="closeDataModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">ยกเลิก</button>
@@ -291,9 +312,6 @@
                 <div class="flex flex-col sm:flex-row gap-3">
                     <!-- Export Buttons (Hidden initially) -->
                     <div id="aiExportButtons" class="hidden flex gap-2">
-                        <button onclick="exportAIReportPDF()" id="btnExportAIPDF" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center">
-                            <i class="fa-solid fa-file-pdf mr-2"></i> PDF
-                        </button>
                         <button onclick="exportAIReportWord()" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition font-medium text-sm flex items-center">
                             <i class="fa-solid fa-file-word mr-2"></i> Word
                         </button>
@@ -345,8 +363,8 @@
                                 <th class="px-5 py-4 text-left font-bold tracking-wider">ปีการศึกษา</th>
                                 <th class="px-5 py-4 text-left font-bold tracking-wider">ภาคเรียน</th>
                                 <th class="px-5 py-4 text-left font-bold tracking-wider">รหัสผู้ประเมิน</th>
-                                <th class="px-5 py-4 text-left font-bold tracking-wider w-1/3">หัวข้อคำถาม</th>
-                                <th class="px-5 py-4 text-center font-bold tracking-wider">คะแนน</th>
+                                <th class="px-5 py-4 text-left font-bold tracking-wider w-1/3">หัวข้อคำถามเฉลี่ย (ตัวอย่าง)</th>
+                                <th class="px-5 py-4 text-center font-bold tracking-wider">คะแนนรวม/เฉลี่ย</th>
                                 <th class="px-5 py-4 text-center font-bold tracking-wider">จัดการ</th>
                             </tr>
                         </thead>
@@ -374,10 +392,17 @@
         let selectedTerms = new Set();
         let isAdmin = false;
         
+        let groupedRespondentData = []; // For Admin Table
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
         // Chart instances
         let pieChartInstance = null;
         let lineChartInstance = null;
-        let barChartInstance = null; // New chart instance
+        let barChartInstance = null;
+
+        // API Configuration (Gemini)
+        const apiKey = ""; // System provides key
 
         // Configuration
         const GOOGLE_SHEET_ID = '1GjvdDDN0Jqy3WtPkMkDpKLyti0Iejwmwsw3jNFdVq-g';
@@ -401,6 +426,17 @@
             fetchGoogleSheetData();
         });
 
+        function showMessage(msg, title = 'แจ้งเตือน', icon = 'fa-circle-info') {
+            document.getElementById('messageTitle').innerText = title;
+            document.getElementById('messageBody').innerText = msg;
+            document.getElementById('messageIcon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            document.getElementById('messageModal').classList.remove('hidden');
+        }
+
+        function closeMessage() {
+            document.getElementById('messageModal').classList.add('hidden');
+        }
+
         // --- Fetch & Process ---
         function fetchGoogleSheetData() {
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -413,7 +449,7 @@
                 complete: function(results) { processIncomingData(results.data); },
                 error: function(err) {
                     console.error(err);
-                    alert("ไม่สามารถดึงข้อมูลอัตโนมัติจากระบบได้ กรุณาใช้ปุ่ม 'นำเข้า'");
+                    showMessage("ไม่สามารถดึงข้อมูลอัตโนมัติจากระบบได้ กรุณาใช้ปุ่ม 'นำเข้า'", "ข้อผิดพลาด", "fa-triangle-exclamation");
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 }
             });
@@ -449,7 +485,7 @@
 
         function processIncomingData(data) {
             if (!data || data.length === 0) {
-                alert("ไม่พบข้อมูล หรือไฟล์ว่างเปล่า");
+                showMessage("ไม่พบข้อมูล หรือไฟล์ว่างเปล่า", "ไม่มีข้อมูล", "fa-folder-open");
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 return;
             }
@@ -463,7 +499,7 @@
 
             rawData = data.map((row, index) => {
                 let q = row[keys.question] ? String(row[keys.question]).trim() : '';
-                q = q.replace(/^0+([1-9])(\.|\s)/, '$1$2');
+                q = q.replace(/^0+([1-9])(\.|\s)/, '$1$2'); // Clean question numbering
                 
                 let s = parseFloat(row[keys.score]);
                 if (isNaN(s)) s = 0;
@@ -548,7 +584,10 @@
         function applyFilters() {
             filteredData = rawData.filter(d => selectedYears.has(d.year) && selectedTerms.has(d.term));
             updateDashboard();
-            if (isAdmin) { currentPage = 1; renderAdminTable(); }
+            if (isAdmin) { 
+                currentPage = 1; 
+                prepareAdminData(); 
+            }
         }
 
         // --- Dashboard Computation ---
@@ -556,600 +595,531 @@
             if (filteredData.length === 0) {
                 document.getElementById('kpiRespondents').innerText = '0';
                 document.getElementById('kpiAvgScore').innerText = '0.00';
-                document.getElementById('kpiTopScore').innerText = 'ไม่พบข้อมูล';
+                document.getElementById('kpiTopScore').innerText = '-';
                 document.getElementById('kpiTopScoreVal').innerText = 'เฉลี่ย 0.00';
+                if(barChartInstance) barChartInstance.destroy();
                 if(pieChartInstance) pieChartInstance.destroy();
                 if(lineChartInstance) lineChartInstance.destroy();
-                if(barChartInstance) barChartInstance.destroy();
                 return;
             }
 
-            const totalRespondents = Math.floor(filteredData.length / 10);
-            document.getElementById('kpiRespondents').innerText = totalRespondents.toLocaleString();
+            // Calculate KPI: Respondents
+            const respondents = new Set(filteredData.map(d => d.respondent)).size;
+            document.getElementById('kpiRespondents').innerText = respondents.toLocaleString();
 
+            // Calculate KPI: Average Score
             const totalScore = filteredData.reduce((sum, d) => sum + d.score, 0);
             const avgScore = (totalScore / filteredData.length).toFixed(2);
             document.getElementById('kpiAvgScore').innerText = avgScore;
 
+            // Calculate KPI: Top Score
             const questionStats = {};
             filteredData.forEach(d => {
-                if (!questionStats[d.question]) questionStats[d.question] = { sum: 0, count: 0 };
+                if(!questionStats[d.question]) questionStats[d.question] = { sum: 0, count: 0 };
                 questionStats[d.question].sum += d.score;
                 questionStats[d.question].count++;
             });
 
-            const qArray = Object.keys(questionStats).map(q => ({
-                question: q,
-                avg: questionStats[q].sum / questionStats[q].count
-            })).sort((a, b) => b.avg - a.avg);
+            let topQuestion = '-';
+            let topAvg = 0;
+            const qAverages = [];
 
-            if (qArray.length > 0) {
-                document.getElementById('kpiTopScore').innerText = qArray[0].question;
-                document.getElementById('kpiTopScoreVal').innerText = `เฉลี่ย ${qArray[0].avg.toFixed(2)}`;
+            for(const q in questionStats) {
+                const avg = questionStats[q].sum / questionStats[q].count;
+                qAverages.push({ question: q, avg: avg });
+                if(avg > topAvg) {
+                    topAvg = avg;
+                    topQuestion = q;
+                }
             }
 
-            renderBarChart(); // New Bar Chart
-            renderPieChart(qArray.slice(0, 10)); 
-            renderLineChart();
+            document.getElementById('kpiTopScore').innerText = topQuestion;
+            document.getElementById('kpiTopScoreVal').innerText = `เฉลี่ย ${topAvg.toFixed(2)}`;
+
+            drawCharts(qAverages.sort((a,b) => b.avg - a.avg));
         }
 
-        // --- Charts ---
-        Chart.defaults.font.family = "'Prompt', sans-serif";
-        const palette = ['#1e3a8a', '#10b981', '#3b82f6', '#34d399', '#6366f1', '#059669', '#818cf8', '#6ee7b7', '#4338ca', '#a7f3d0'];
-
-        // 1. New Bar Chart (Yearly)
-        function renderBarChart() {
-            const ctx = document.getElementById('barChart').getContext('2d');
-            if (barChartInstance) barChartInstance.destroy();
-
-            // Sort years in ascending order for the chart (oldest to newest left to right)
-            const yearsToChart = Array.from(selectedYears).sort();
+        function drawCharts(sortedQAverages) {
+            // Colors
+            const colors = ['#1e3a8a', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#6366f1', '#84cc16'];
             
-            const yearAverages = yearsToChart.map(year => {
-                const yearData = filteredData.filter(d => d.year === year);
-                if (yearData.length === 0) return 0;
-                const sum = yearData.reduce((acc, val) => acc + val.score, 0);
-                return parseFloat((sum / yearData.length).toFixed(2));
-            });
+            Chart.defaults.font.family = "'Prompt', sans-serif";
 
-            barChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: yearsToChart.map(y => `ปีการศึกษา ${y}`),
-                    datasets: [{
-                        label: 'ความพึงพอใจเฉลี่ย',
-                        data: yearAverages,
-                        backgroundColor: '#3b82f6', // สีน้ำเงินสว่าง
-                        borderRadius: 6,
-                        maxBarThickness: 80
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            min: 1, max: 5, 
-                            title: { display: true, text: 'คะแนนเฉลี่ย', font: { weight: 'bold' } },
-                            grid: { color: '#e2e8f0' }
-                        },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: { label: (context) => ` เฉลี่ย: ${context.raw} / 5.00` }
-                        }
-                    }
-                }
-            });
-        }
-
-        // 2. Pie Chart
-        function renderPieChart(qArray) {
-            const ctx = document.getElementById('pieChart').getContext('2d');
+            // --- Pie Chart (Top Questions) ---
+            const top10 = sortedQAverages.slice(0, 10);
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
             if (pieChartInstance) pieChartInstance.destroy();
-
-            const labels = qArray.map(q => q.question.length > 35 ? q.question.substring(0, 35) + '...' : q.question);
-            const data = qArray.map(q => q.avg.toFixed(2));
-
-            pieChartInstance = new Chart(ctx, {
+            pieChartInstance = new Chart(pieCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels: top10.map(q => q.question.length > 25 ? q.question.substring(0, 25) + '...' : q.question),
                     datasets: [{
-                        data: data,
-                        backgroundColor: palette,
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
+                        data: top10.map(q => q.avg),
+                        backgroundColor: colors,
+                        borderWidth: 2,
                         hoverOffset: 10
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 10 },
                     plugins: {
-                        legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
-                        tooltip: { callbacks: { label: (context) => ` เฉลี่ย: ${context.raw} / 5.00` } }
-                    },
-                    cutout: '55%'
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (ctx) => ` คะแนนเฉลี่ย: ${ctx.raw.toFixed(2)}` } }
+                    }
                 }
             });
-        }
 
-        // 3. Line Chart
-        function renderLineChart() {
-            const ctx = document.getElementById('lineChart').getContext('2d');
-            if (lineChartInstance) lineChartInstance.destroy();
+            // --- Compute Data for Year/Term Charts ---
+            const yearStats = {};
+            const termYearStats = {};
 
-            const yearsToChart = Array.from(selectedYears).sort();
-            const termsToChart = Array.from(selectedTerms).sort();
-            let maxScore = -1;
+            filteredData.forEach(d => {
+                // For Bar chart (Yearly)
+                if(!yearStats[d.year]) yearStats[d.year] = { sum: 0, count: 0 };
+                yearStats[d.year].sum += d.score;
+                yearStats[d.year].count++;
 
-            yearsToChart.forEach(year => {
-                termsToChart.forEach(term => {
-                    const filtered = filteredData.filter(d => d.year === year && d.term === term);
-                    if (filtered.length > 0) {
-                        const avg = parseFloat((filtered.reduce((a, b) => a + b.score, 0) / filtered.length).toFixed(2));
-                        if (avg > maxScore) maxScore = avg;
-                    }
-                });
+                // For Line chart (Term + Year)
+                if(!termYearStats[d.term]) termYearStats[d.term] = {};
+                if(!termYearStats[d.term][d.year]) termYearStats[d.term][d.year] = { sum: 0, count: 0 };
+                termYearStats[d.term][d.year].sum += d.score;
+                termYearStats[d.term][d.year].count++;
             });
 
-            const datasets = yearsToChart.map((year, i) => {
-                const dataPoints = termsToChart.map(term => {
-                    const filtered = filteredData.filter(d => d.year === year && d.term === term);
-                    if (filtered.length === 0) return null;
-                    return parseFloat((filtered.reduce((a, b) => a + b.score, 0) / filtered.length).toFixed(2));
-                });
-
-                const color = palette[i % palette.length];
-                return {
-                    label: `ปีการศึกษา ${year}`,
-                    data: dataPoints,
-                    borderColor: color,
-                    backgroundColor: color + '20',
-                    borderWidth: 3,
-                    pointBackgroundColor: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? '#f43f5e' : '#ffffff',
-                    pointBorderColor: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? '#be123c' : color,
-                    pointRadius: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 10 : 5,
-                    pointHoverRadius: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 12 : 7,
-                    pointBorderWidth: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 3 : 2,
-                    fill: true,
-                    tension: 0.3
-                };
-            });
-
-            lineChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: { labels: termsToChart.map(t => `ภาคเรียน ${t}`), datasets: datasets },
+            // --- Bar Chart (Yearly Comparison) ---
+            const sortedYears = Object.keys(yearStats).sort();
+            const yearAvgs = sortedYears.map(y => yearStats[y].sum / yearStats[y].count);
+            
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedYears,
+                    datasets: [{
+                        label: 'คะแนนเฉลี่ย',
+                        data: yearAvgs,
+                        backgroundColor: '#1e3a8a',
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { min: 1, max: 5, title: { display: true, text: 'คะแนน', font: { weight: 'bold' } } },
-                        x: { grid: { display: false } }
+                        y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
                     },
                     plugins: {
-                        legend: { position: 'top', labels: { usePointStyle: true } },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => {
-                                    const isMax = ctx.raw === maxScore ? ' (สูงสุด)' : '';
-                                    return ` ${ctx.dataset.label}: ${ctx.raw} ${isMax}`;
-                                }
-                            }
-                        }
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ` เฉลี่ย: ${ctx.raw.toFixed(2)}` } }
                     }
+                }
+            });
+
+            // --- Line Chart (Termly Comparison across Years) ---
+            const sortedTerms = Object.keys(termYearStats).sort();
+            const datasets = sortedYears.map((year, i) => {
+                const data = sortedTerms.map(term => {
+                    const stat = termYearStats[term][year];
+                    return stat ? stat.sum / stat.count : null;
+                });
+                return {
+                    label: `ปี ${year}`,
+                    data: data,
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: colors[i % colors.length],
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                };
+            });
+
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            if (lineChartInstance) lineChartInstance.destroy();
+            lineChartInstance = new Chart(lineCtx, {
+                type: 'line',
+                data: { labels: sortedTerms.map(t => `เทอม ${t}`), datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 5 } },
+                    plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)}` } } }
                 }
             });
         }
 
-        // --- AI Executive Report (Gemini) ---
-        async function generateAIReport() {
-            const btn = document.getElementById('aiBtn');
-            const contentDiv = document.getElementById('aiReportContent');
-            const textDiv = document.getElementById('aiText');
-            const exportBtns = document.getElementById('aiExportButtons');
-            
-            if(filteredData.length === 0) {
-                alert("ไม่มีข้อมูลสำหรับวิเคราะห์ กรุณาตรวจสอบตัวกรองข้อมูล");
-                return;
-            }
-
-            exportBtns.classList.add('hidden'); // ซ่อนปุ่ม export ระหว่างโหลด
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังวิเคราะห์...';
-            btn.classList.add('opacity-75', 'cursor-wait');
-            contentDiv.classList.remove('hidden');
-            textDiv.innerHTML = '<p class="text-center text-gray-500 py-10"><i class="fa-solid fa-robot fa-bounce text-3xl mb-3"></i><br>AI กำลังประมวลผลข้อมูลและเขียนรายงาน...</p>';
-
-            try {
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                
-                const totalRes = document.getElementById('kpiRespondents').innerText;
-                const avgScore = document.getElementById('kpiAvgScore').innerText;
-                const topQ = document.getElementById('kpiTopScore').innerText;
-                
-                const questionStats = {};
-                filteredData.forEach(d => {
-                    if (!questionStats[d.question]) questionStats[d.question] = { sum: 0, count: 0 };
-                    questionStats[d.question].sum += d.score;
-                    questionStats[d.question].count++;
-                });
-                const qSummary = Object.keys(questionStats).map(q => 
-                    `${q}: ${(questionStats[q].sum / questionStats[q].count).toFixed(2)}`
-                ).join("\n");
-
-                const prompt = `ในฐานะผู้เชี่ยวชาญด้านการวิเคราะห์ข้อมูลและพัฒนาการศึกษา กรุณาเขียน "รายงานสรุปสำหรับผู้บริหาร (Executive Report)" จากข้อมูลการประเมินการสอนต่อไปนี้ สรุปให้กระชับ เป็นมืออาชีพ (ภาษาไทย)
-
-ข้อมูลภาพรวม:
-- จำนวนผู้ตอบประเมิน: ${totalRes} คน
-- คะแนนความพึงพอใจเฉลี่ยรวม: ${avgScore} จาก 5 คะแนน
-- หัวข้อที่ได้คะแนนสูงสุด: ${topQ}
-
-ข้อมูลคะแนนเฉลี่ยรายข้อ:
-${qSummary}
-
-กรุณาเขียนรายงานโดยแบ่งเป็น 4 หัวข้อหลัก:
-1. ภาพรวมการประเมิน
-2. จุดเด่นและสิ่งที่ทำได้ดี
-3. ประเด็นที่ควรได้รับการพัฒนา (ดูจากข้อที่คะแนนต่ำ)
-4. ข้อเสนอแนะเชิงกลยุทธ์สำหรับผู้บริหาร`;
-
-                const payload = { contents: [{ parts: [{ text: prompt }] }] };
-                const retries = 5;
-                const backoffs = [1000, 2000, 4000, 8000, 16000];
-                let resultText = "";
-
-                for (let i = 0; i < retries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        const result = await response.json();
-                        resultText = result.candidates?.[0]?.content?.parts?.[0]?.text || "เกิดข้อผิดพลาดในการแปลผลจาก AI";
-                        break;
-                    } catch (error) {
-                        if (i === retries - 1) throw error;
-                        await new Promise(res => setTimeout(res, backoffs[i]));
-                    }
-                }
-
-                textDiv.innerHTML = marked.parse(resultText);
-                exportBtns.classList.remove('hidden'); // แสดงปุ่ม export เมื่อเสร็จสิ้น
-
-            } catch (err) {
-                console.error(err);
-                textDiv.innerHTML = '<p class="text-red-500 font-bold p-4">ไม่สามารถเชื่อมต่อกับ AI ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง (Environment อาจไม่รองรับ API Key)</p>';
-            } finally {
-                btn.innerHTML = '<i class="fa-solid fa-robot mr-2"></i> สร้างใหม่';
-                btn.classList.remove('opacity-75', 'cursor-wait');
-            }
-        }
-
-        // --- Export Executive Report (Word / PDF) ---
-        function exportAIReportWord() {
-            const content = document.getElementById('aiText').innerHTML;
-            // เพิ่ม Boilerplate ของ Word และกำหนดฟอนต์มาตรฐาน
-            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>Executive Report</title>
-            <style>
-                body { font-family: 'Sarabun', 'TH Sarabun New', sans-serif; font-size: 16pt; line-height: 1.5; }
-                h1, h2, h3 { color: #1e3a8a; }
-            </style></head><body>
-            <h2 style="text-align:center;">รายงานสรุปสำหรับผู้บริหาร (Executive Report)</h2><br>`;
-            const footer = "</body></html>";
-            
-            const sourceHTML = header + content + footer;
-            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
-            
-            const fileDownload = document.createElement("a");
-            document.body.appendChild(fileDownload);
-            fileDownload.href = source;
-            fileDownload.download = 'Executive_Report.doc';
-            fileDownload.click();
-            document.body.removeChild(fileDownload);
-        }
-
-        async function exportAIReportPDF() {
-            const btn = document.getElementById('btnExportAIPDF');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> ...';
-            btn.classList.add('opacity-50', 'cursor-wait');
-
-            try {
-                // สร้าง div จำลองขนาดเท่า A4 เพื่อจัดหน้ากกระดาษก่อน capture
-                const tempDiv = document.createElement('div');
-                tempDiv.style.width = '794px'; // ความกว้าง A4 ที่ 96 DPI
-                tempDiv.style.padding = '40px 50px';
-                tempDiv.style.backgroundColor = 'white';
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.top = '-9999px';
-                tempDiv.style.fontFamily = "'Prompt', sans-serif";
-                tempDiv.style.color = '#1f2937';
-                
-                // คัดลอกเนื้อหาและสไตล์เบื้องต้น
-                tempDiv.innerHTML = `
-                    <div style="text-align:center; margin-bottom: 20px;">
-                        <h2 style="color: #1e3a8a; font-size: 24px; font-weight: bold; margin-bottom: 5px;">รายงานสรุปสำหรับผู้บริหาร (Executive Report)</h2>
-                        <p style="color: #6b7280; font-size: 14px;">หลักสูตรสาธารณสุขศาสตรบัณฑิต โครงการจัดตั้งวิทยาเขตอำนาจเจริญ มหาวิทยาลัยมหิดล</p>
-                        <hr style="margin-top: 15px; border: 1px solid #e5e7eb;">
-                    </div>
-                    <div class="prose max-w-none" style="font-size: 16px; line-height: 1.6;">
-                        ${document.getElementById('aiText').innerHTML}
-                    </div>
-                `;
-                document.body.appendChild(tempDiv);
-
-                // แปลงสไตล์ให้ html2canvas อ่านได้ (แทนที่ class ของ tailwind ด้วย inline style เบื้องต้น)
-                const headings = tempDiv.querySelectorAll('h1, h2, h3');
-                headings.forEach(h => { h.style.color = '#1e3a8a'; h.style.fontWeight = 'bold'; h.style.marginTop = '20px'; h.style.marginBottom = '10px'; });
-                const lists = tempDiv.querySelectorAll('ul');
-                lists.forEach(l => { l.style.paddingLeft = '20px'; l.style.listStyleType = 'disc'; l.style.marginBottom = '15px'; });
-
-                const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true });
-                document.body.removeChild(tempDiv);
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                
-                // คำนวณความสูงของรูปภาพให้สอดคล้องกับความกว้าง A4
-                const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
-
-                // แปะหน้าแรก
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                // หากเนื้อหายาวเกิน 1 หน้า ให้ขึ้นหน้าใหม่
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight; // เลื่อนตำแหน่ง Y ขึ้นไปเพื่อโชว์ส่วนที่เหลือ
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                pdf.save('Executive_Report_AI.pdf');
-
-            } catch (err) {
-                console.error(err);
-                alert('เกิดข้อผิดพลาดในการสร้าง PDF');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.classList.remove('opacity-50', 'cursor-wait');
-            }
-        }
-
-        // --- Admin & Auth ---
+        // --- Admin Functions ---
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-        function closeLoginModal() { 
-            document.getElementById('loginModal').classList.add('hidden'); 
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-        }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+        
         function attemptLogin() {
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
-            if (u === 'admin' && p === '1234') {
+            if(u === 'admin' && p === 'admin') {
                 isAdmin = true;
                 closeLoginModal();
                 document.getElementById('loginBtn').classList.add('hidden');
                 document.getElementById('logoutBtn').classList.remove('hidden');
                 document.getElementById('adminArea').classList.remove('hidden');
-                renderAdminTable();
-            } else { alert('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง'); }
+                prepareAdminData();
+                showMessage("เข้าสู่ระบบผู้ดูแลเรียบร้อยแล้ว", "สำเร็จ", "fa-check-circle");
+            } else {
+                showMessage("ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง", "เข้าสู่ระบบล้มเหลว", "fa-xmark");
+            }
+            document.getElementById('password').value = '';
         }
+
         function logout() {
             isAdmin = false;
             document.getElementById('loginBtn').classList.remove('hidden');
             document.getElementById('logoutBtn').classList.add('hidden');
             document.getElementById('adminArea').classList.add('hidden');
+            showMessage("ออกจากระบบเรียบร้อยแล้ว", "สำเร็จ", "fa-check-circle");
         }
 
-        // --- CRUD Logic ---
-        let currentPage = 1;
-        const rowsPerPage = 50;
+        // Group data by respondent for the table
+        function prepareAdminData() {
+            const groupedMap = {};
+            filteredData.forEach(d => {
+                const key = `${d.year}|${d.term}|${d.respondent}`;
+                if(!groupedMap[key]) {
+                    groupedMap[key] = {
+                        year: d.year, term: d.term, respondent: d.respondent,
+                        questions: [], totalScore: 0, idRef: d._id
+                    };
+                }
+                groupedMap[key].questions.push({ q: d.question, s: d.score, _id: d._id });
+                groupedMap[key].totalScore += d.score;
+            });
+
+            groupedRespondentData = Object.values(groupedMap).sort((a,b) => b.year - a.year || a.term.localeCompare(b.term));
+            renderAdminTable();
+        }
 
         function renderAdminTable() {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const paginatedData = filteredData.slice(start, end);
+            
+            const totalItems = groupedRespondentData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = groupedRespondentData.slice(start, end);
 
-            paginatedData.forEach(d => {
+            document.getElementById('tableInfo').innerText = `แสดง ${start + 1} ถึง ${Math.min(end, totalItems)} จาก ${totalItems} รายการ`;
+
+            pageData.forEach(row => {
+                const avg = (row.totalScore / row.questions.length).toFixed(2);
+                let sampleQ = row.questions.slice(0, 2).map(q => `<div class="text-xs text-gray-500 line-clamp-1">- ${q.q}: ${q.s} คะแนน</div>`).join('');
+                if(row.questions.length > 2) sampleQ += `<div class="text-xs text-blue-500 mt-1">+ อีก ${row.questions.length - 2} ข้อ</div>`;
+
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition-colors border-b border-gray-100";
                 tr.innerHTML = `
-                    <td class="px-5 py-3 whitespace-nowrap text-gray-700">${d.year}</td>
-                    <td class="px-5 py-3 whitespace-nowrap text-gray-600">${d.term}</td>
-                    <td class="px-5 py-3 whitespace-nowrap text-gray-500 font-mono text-xs">${d.respondent.substring(0,20)}</td>
-                    <td class="px-5 py-3 text-gray-800">${d.question}</td>
-                    <td class="px-5 py-3 text-center"><span class="px-3 py-1 bg-blue-100 text-brand-blue font-bold rounded-full">${d.score}</span></td>
-                    <td class="px-5 py-3 text-center whitespace-nowrap">
-                        <button onclick="openEditSingleModal(${d._id})" class="text-blue-500 hover:text-blue-700 mr-3" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
-                        <button onclick="deleteData(${d._id})" class="text-red-500 hover:text-red-700" title="ลบ"><i class="fa-solid fa-trash-can text-lg"></i></button>
+                    <td class="px-5 py-4 whitespace-nowrap">${row.year}</td>
+                    <td class="px-5 py-4 whitespace-nowrap">เทอม ${row.term}</td>
+                    <td class="px-5 py-4 whitespace-nowrap font-medium text-brand-blue">${row.respondent}</td>
+                    <td class="px-5 py-4">${sampleQ}</td>
+                    <td class="px-5 py-4 text-center">
+                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-lg font-bold">${avg}</span>
+                    </td>
+                    <td class="px-5 py-4 text-center whitespace-nowrap">
+                        <button onclick="openEditModal('${row.year}', '${row.term}', '${row.respondent}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteRespondent('${row.year}', '${row.term}', '${row.respondent}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            const total = filteredData.length;
-            document.getElementById('tableInfo').innerText = `แสดง ${total > 0 ? start + 1 : 0} ถึง ${Math.min(end, total)} จาก ${total} รายการ`;
-            
-            const totalPages = Math.ceil(total / rowsPerPage);
-            let pageBtns = '';
-            if(currentPage > 1) pageBtns += `<button onclick="changePage(-1)" class="px-3 py-1.5 border rounded hover:bg-gray-50">ก่อนหน้า</button>`;
-            if(currentPage < totalPages) pageBtns += `<button onclick="changePage(1)" class="px-3 py-1.5 border rounded hover:bg-gray-50">ถัดไป</button>`;
-            document.getElementById('paginationControls').innerHTML = pageBtns;
+            renderPagination(totalPages);
         }
 
-        function changePage(dir) { currentPage += dir; renderAdminTable(); }
+        function renderPagination(totalPages) {
+            const controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+            
+            const createBtn = (text, page, disabled) => {
+                const b = document.createElement('button');
+                b.innerHTML = text;
+                b.className = `px-3 py-1 border rounded ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'} ${page === currentPage && !disabled ? 'border-brand-blue bg-blue-50 text-brand-blue font-bold' : ''}`;
+                if(!disabled) b.onclick = () => { currentPage = page; renderAdminTable(); };
+                return b;
+            };
 
-        function closeDataModal() { document.getElementById('dataModal').classList.add('hidden'); }
+            controls.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage - 1, currentPage === 1));
+            
+            // Limit page buttons logic
+            let startP = Math.max(1, currentPage - 2);
+            let endP = Math.min(totalPages, startP + 4);
+            if(endP - startP < 4) startP = Math.max(1, endP - 4);
+
+            for(let i=startP; i<=endP; i++) controls.appendChild(createBtn(i, i, false));
+            
+            controls.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage + 1, currentPage === totalPages));
+        }
 
         function openAddModal() {
-            document.getElementById('modalTitle').innerText = 'เพิ่มข้อมูลผู้ประเมินใหม่ (10 ข้อ)';
-            document.getElementById('editRowId').value = '';
             document.getElementById('editModeType').value = 'add';
+            document.getElementById('modalTitle').innerText = 'เพิ่มข้อมูลผู้ประเมินใหม่';
+            document.getElementById('inputYear').value = uniqueYears[0] || '2566';
+            document.getElementById('inputYear').disabled = false;
+            document.getElementById('inputTerm').value = uniqueTerms[0] || '1';
+            document.getElementById('inputTerm').disabled = false;
             
-            let html = `
-                <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg mb-4 border">
-                    <div><label class="block text-sm font-semibold mb-1">ปีการศึกษา</label><input type="text" id="f_year" class="w-full border p-2 rounded" placeholder="เช่น 2566"></div>
-                    <div><label class="block text-sm font-semibold mb-1">ภาคเรียน</label><input type="text" id="f_term" class="w-full border p-2 rounded" placeholder="เช่น 1 หรือ 2"></div>
-                    <div class="col-span-2"><label class="block text-sm font-semibold mb-1">รหัสผู้ประเมิน (อัตโนมัติหรือกำหนดเอง)</label><input type="text" id="f_res" class="w-full border p-2 rounded" value="USER_${Date.now().toString().slice(-6)}"></div>
-                </div>
-                <h4 class="font-bold text-brand-blue mb-2">กรอกคะแนน (1-5) ตามหัวข้อ</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            `;
+            generateFormFields([]);
+            document.getElementById('dataModal').classList.remove('hidden');
+        }
+
+        function openEditModal(year, term, respondent) {
+            document.getElementById('editModeType').value = 'edit';
+            document.getElementById('editRespondentId').value = respondent;
+            document.getElementById('modalTitle').innerText = `แก้ไขข้อมูล: ${respondent}`;
             
-            uniqueQuestionsList.forEach((q, i) => {
-                html += `
-                    <div class="bg-white p-3 border rounded shadow-sm">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1 truncate" title="${q}">${q}</label>
-                        <input type="number" min="1" max="5" id="f_q_${i}" class="w-full border p-2 rounded font-bold text-brand-blue" value="5">
-                        <input type="hidden" id="f_qtext_${i}" value="${q}">
+            document.getElementById('inputYear').value = year;
+            document.getElementById('inputYear').disabled = true;
+            document.getElementById('inputTerm').value = term;
+            document.getElementById('inputTerm').disabled = true;
+
+            const rData = filteredData.filter(d => d.year === year && d.term === term && d.respondent === respondent);
+            generateFormFields(rData);
+            document.getElementById('dataModal').classList.remove('hidden');
+        }
+
+        function generateFormFields(existingData) {
+            const container = document.getElementById('dynamicFormFields');
+            container.innerHTML = '';
+            
+            uniqueQuestionsList.forEach((q, idx) => {
+                const exist = existingData.find(d => d.question === q);
+                const score = exist ? exist.score : 5; // Default 5
+                
+                container.innerHTML += `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 border-b border-gray-200 last:border-0">
+                        <label class="text-sm text-gray-700 w-full sm:w-2/3 mb-2 sm:mb-0 pr-2">${q}</label>
+                        <div class="w-full sm:w-1/3">
+                            <input type="number" id="q_score_${idx}" data-question="${q}" min="1" max="5" step="0.5" value="${score}" class="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-brand-blue outline-none text-center">
+                        </div>
                     </div>
                 `;
             });
-            html += `</div>`;
-            document.getElementById('dynamicFormFields').innerHTML = html;
-            document.getElementById('dataModal').classList.remove('hidden');
         }
 
-        function openEditSingleModal(id) {
-            document.getElementById('modalTitle').innerText = 'แก้ไขข้อมูล (1 รายการ)';
-            document.getElementById('editRowId').value = id;
-            document.getElementById('editModeType').value = 'edit_single';
-            const item = rawData.find(d => d._id === id);
-            
-            const html = `
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-sm font-semibold mb-1">ปีการศึกษา</label><input type="text" id="f_year" class="w-full border p-2 rounded" value="${item.year}"></div>
-                    <div><label class="block text-sm font-semibold mb-1">ภาคเรียน</label><input type="text" id="f_term" class="w-full border p-2 rounded" value="${item.term}"></div>
-                </div>
-                <div><label class="block text-sm font-semibold mb-1">ผู้ประเมิน</label><input type="text" id="f_res" class="w-full border p-2 rounded" value="${item.respondent}"></div>
-                <div><label class="block text-sm font-semibold mb-1">หัวข้อคำถาม</label><input type="text" id="f_qtext_0" class="w-full border p-2 rounded bg-gray-100" value="${item.question}" readonly></div>
-                <div><label class="block text-sm font-semibold mb-1">คะแนน (1-5)</label><input type="number" min="1" max="5" id="f_q_0" class="w-full border p-2 rounded font-bold text-brand-blue" value="${item.score}"></div>
-            `;
-            document.getElementById('dynamicFormFields').innerHTML = html;
-            document.getElementById('dataModal').classList.remove('hidden');
-        }
+        function closeDataModal() { document.getElementById('dataModal').classList.add('hidden'); }
 
         function saveData() {
             const mode = document.getElementById('editModeType').value;
-            const year = document.getElementById('f_year').value.trim();
-            const term = document.getElementById('f_term').value.trim();
-            const res = document.getElementById('f_res').value.trim();
+            const year = document.getElementById('inputYear').value;
+            const term = document.getElementById('inputTerm').value;
+            const respondent = mode === 'edit' ? document.getElementById('editRespondentId').value : `USER_${Date.now().toString().slice(-6)}`;
+            
+            if(!year || !term) { showMessage("กรุณากรอกปีการศึกษาและภาคเรียนให้ครบถ้วน", "ข้อมูลไม่ครบ", "fa-triangle-exclamation"); return; }
 
-            if(!year || !term) { alert("กรุณากรอก ปี และ ภาคเรียน"); return; }
-
-            if (mode === 'add') {
-                const newEntries = [];
-                for(let i=0; i<uniqueQuestionsList.length; i++) {
-                    const qText = document.getElementById(`f_qtext_${i}`).value;
-                    let score = parseFloat(document.getElementById(`f_q_${i}`).value) || 0;
-                    if(score > 5) score = 5; if(score < 1) score = 1;
-                    
-                    newEntries.push({
-                        _id: Date.now() + i,
-                        year: year, term: term, respondent: res,
-                        question: qText, score: score
-                    });
-                }
-                rawData.push(...newEntries);
-                alert("เพิ่มข้อมูล 10 รายการสำเร็จ");
-            } else {
-                const id = parseInt(document.getElementById('editRowId').value);
-                const qText = document.getElementById(`f_qtext_0`).value;
-                let score = parseFloat(document.getElementById(`f_q_0`).value) || 0;
-                if(score > 5) score = 5; if(score < 1) score = 1;
-
-                const index = rawData.findIndex(d => d._id === id);
-                if (index > -1) {
-                    rawData[index] = { ...rawData[index], year, term, respondent: res, question: qText, score };
-                }
-                alert("อัปเดตข้อมูลสำเร็จ");
+            // Remove old if edit
+            if(mode === 'edit') {
+                rawData = rawData.filter(d => !(d.year === year && d.term === term && d.respondent === respondent));
             }
 
-            closeDataModal();
-            extractFilters(); 
+            // Add new
+            const newEntries = [];
+            uniqueQuestionsList.forEach((q, idx) => {
+                const scoreInput = document.getElementById(`q_score_${idx}`);
+                let s = parseFloat(scoreInput.value);
+                if(isNaN(s) || s < 1) s = 1;
+                if(s > 5) s = 5;
+
+                newEntries.push({
+                    _id: Date.now() + Math.random(),
+                    year: year,
+                    term: term,
+                    question: q,
+                    score: s,
+                    respondent: respondent
+                });
+            });
+
+            rawData = [...rawData, ...newEntries];
+            
+            extractFilters(); // Re-extract to update filters if new year/term added
             applyFilters();
+            closeDataModal();
+            showMessage("บันทึกข้อมูลสำเร็จ", "สำเร็จ", "fa-check-circle");
         }
 
-        function deleteData(id) {
-            if (confirm('ยืนยันการลบข้อมูลนี้?')) {
-                rawData = rawData.filter(d => d._id !== id);
-                extractFilters();
+        function deleteRespondent(year, term, respondent) {
+            if(confirm(`คุณแน่ใจหรือไม่ที่จะลบข้อมูลผู้ประเมินรหัส ${respondent}?`)) {
+                rawData = rawData.filter(d => !(d.year === year && d.term === term && d.respondent === respondent));
                 applyFilters();
             }
         }
 
-        // --- Export CSV / Excel (Admin) ---
+        // --- Export Functions ---
         function exportData() {
-            if(rawData.length === 0) { alert("ไม่มีข้อมูลสำหรับ Export"); return; }
             const format = document.getElementById('exportFormat').value;
-            
-            const dataToExport = rawData.map(d => ({
-                [keys.year || 'ปีการศึกษา']: d.year,
-                [keys.term || 'ภาคเรียน']: d.term,
-                [keys.respondent || 'ผู้ประเมิน']: d.respondent,
-                [keys.question || 'ข้อคำถาม']: d.question,
-                [keys.score || 'คะแนน']: d.score
+            if (filteredData.length === 0) { showMessage("ไม่มีข้อมูลสำหรับส่งออก", "คำเตือน", "fa-triangle-exclamation"); return; }
+
+            const exportArr = filteredData.map(d => ({
+                'ปีการศึกษา': d.year,
+                'ภาคเรียน': d.term,
+                'รหัสผู้ประเมิน': d.respondent,
+                'หัวข้อคำถาม': d.question,
+                'คะแนน': d.score
             }));
 
             if (format === 'csv') {
-                const csvString = "\uFEFF" + Papa.unparse(dataToExport);
-                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
+                const csv = Papa.unparse(exportArr);
+                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
-                link.href = url;
-                link.download = "Teaching_Evaluation_Export.csv";
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                link.href = URL.createObjectURL(blob);
+                link.download = `MU_Evaluation_${Date.now()}.csv`;
+                link.click();
             } else {
-                const ws = XLSX.utils.json_to_sheet(dataToExport);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Evaluation_Data");
-                XLSX.writeFile(wb, "Teaching_Evaluation_Export.xlsx");
+                const worksheet = XLSX.utils.json_to_sheet(exportArr);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Evaluation_Data");
+                XLSX.writeFile(workbook, `MU_Evaluation_${Date.now()}.xlsx`);
             }
         }
 
-        // --- Export Full Dashboard to PDF ---
         async function exportToPDF() {
-            const element = document.getElementById('dashboardContent');
             const btn = document.getElementById('pdfBtn');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> สร้าง PDF...';
-            btn.classList.add('opacity-70', 'cursor-wait');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังสร้าง...';
+            btn.disabled = true;
 
             try {
-                const ignores = document.querySelectorAll('[data-html2canvas-ignore="true"]');
-                ignores.forEach(el => el.style.display = 'none');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const content = document.getElementById('dashboardContent');
+                
+                // Hide elements that shouldn't be in PDF via data attribute
+                const ignoreElements = document.querySelectorAll('[data-html2canvas-ignore="true"]');
+                ignoreElements.forEach(el => el.style.display = 'none');
 
-                const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
-
-                ignores.forEach(el => el.style.display = '');
-
+                const canvas = await html2canvas(content, { scale: 2, useCORS: true });
                 const imgData = canvas.toDataURL('image/png');
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                
+                ignoreElements.forEach(el => el.style.display = ''); // Restore
+
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                 
-                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-                pdf.save('Teaching_Evaluation_Dashboard.pdf');
-                
-            } catch (err) { alert('เกิดข้อผิดพลาดในการสร้าง PDF'); } 
-            finally { btn.innerHTML = originalHtml; btn.classList.remove('opacity-70', 'cursor-wait'); }
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MU_Evaluation_Report_${Date.now()}.pdf`);
+            } catch (error) {
+                console.error("PDF generation failed:", error);
+                showMessage("ไม่สามารถสร้าง PDF ได้", "ข้อผิดพลาด", "fa-xmark");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
+        function exportAIReportWord() {
+            const content = document.getElementById('aiText').innerHTML;
+            if(!content) return;
+
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>AI Report</title><style>body { font-family: 'Sarabun', 'TH Sarabun New', sans-serif; }</style></head><body>";
+            const footer = "</body></html>";
+            const sourceHTML = header + content + footer;
+            
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = `AI_Executive_Report_${Date.now()}.doc`;
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+
+        // --- Gemini AI ---
+        async function generateAIReport() {
+            if(filteredData.length === 0) {
+                showMessage("กรุณานำเข้าข้อมูลก่อนสร้างรายงาน", "ไม่มีข้อมูล", "fa-triangle-exclamation");
+                return;
+            }
+
+            const btn = document.getElementById('aiBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> กำลังวิเคราะห์...';
+            btn.disabled = true;
+
+            document.getElementById('aiReportContent').classList.remove('hidden');
+            document.getElementById('aiText').innerHTML = `
+                <div class="flex items-center justify-center p-8 space-x-3 text-indigo-600">
+                    <div class="loader w-6 h-6 border-2 border-t-indigo-600"></div>
+                    <span class="font-medium">AI กำลังประมวลผลข้อมูลและร่างรายงาน...</span>
+                </div>
+            `;
+
+            // Prep summary data for AI
+            const totalRespondents = document.getElementById('kpiRespondents').innerText;
+            const avgScore = document.getElementById('kpiAvgScore').innerText;
+            const topScoreTitle = document.getElementById('kpiTopScore').innerText;
+
+            const promptText = `
+                คุณคือผู้เชี่ยวชาญด้านการประเมินคุณภาพการศึกษา เขียนรายงานสรุปเชิงบริหาร (Executive Summary) อย่างเป็นทางการด้วยภาษาไทย
+                อ้างอิงจากข้อมูลสถิติการประเมินการจัดการเรียนการสอน (คะแนนเต็ม 5) ดังนี้:
+                - จำนวนผู้ตอบ: ${totalRespondents} คน
+                - คะแนนเฉลี่ยรวม: ${avgScore} คะแนน
+                - หัวข้อที่ได้คะแนนสูงสุด: "${topScoreTitle}"
+
+                กรุณาเขียนรายงานตามโครงสร้างดังนี้ (ใช้ Markdown):
+                1. สรุปภาพรวมผลการประเมิน (Overview)
+                2. จุดเด่นที่ควรส่งเสริม (Strengths) วิเคราะห์จากหัวข้อคะแนนสูงสุด
+                3. ข้อเสนอแนะเชิงกลยุทธ์เพื่อการพัฒนา (Strategic Recommendations) (คิดวิเคราะห์ให้ 2-3 ข้อ)
+                ใช้โทนเสียงเป็นทางการและสร้างสรรค์
+            `;
+
+            try {
+                // Exponential Backoff implementation
+                const retries = [1000, 2000, 4000, 8000, 16000];
+                let response = null;
+                
+                const fetchAI = async () => {
+                    return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText }] }]
+                        })
+                    });
+                };
+
+                for(let i=0; i<=retries.length; i++) {
+                    try {
+                        response = await fetchAI();
+                        if(response.ok) break;
+                        if(i === retries.length) throw new Error("Max retries reached");
+                        await new Promise(r => setTimeout(r, retries[i])); // Wait before retry
+                    } catch(e) {
+                        if(i === retries.length) throw e;
+                    }
+                }
+
+                const data = await response.json();
+                let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if(!aiText) throw new Error("No text returned from API");
+
+                document.getElementById('aiText').innerHTML = marked.parse(aiText);
+                document.getElementById('aiExportButtons').classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('aiText').innerHTML = `
+                    <div class="p-4 bg-red-50 text-red-600 rounded-lg border border-red-200">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> 
+                        เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI หรือ API Key ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
+                    </div>`;
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
