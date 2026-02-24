@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานผลประเมินการจัดการเรียนการสอน | มหาวิทยาลัยมหิดล วิทยาเขตอำนาจเจริญ</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', 'sans-serif'] },
+                    colors: {
+                        'brand-dark': '#0f172a',
+                        'brand-blue': '#1e3a8a',
+                        'brand-pastel': '#d1fae5',
+                        'brand-green': '#10b981',
+                        'brand-accent': '#f43f5e'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { background-color: #f8fafc; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e3a8a;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .custom-checkbox:checked + div { background-color: #1e3a8a; border-color: #1e3a8a; }
+        .custom-checkbox:checked + div svg { display: block; }
+        
+        /* Markdown rendering styles */
+        .prose h1, .prose h2, .prose h3 { color: #1e3a8a; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 1em; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose strong { color: #0f172a; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased font-sans flex flex-col min-h-screen">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+        <div class="loader mb-4"></div>
+        <h2 class="text-brand-blue font-semibold text-xl" id="loadingText">กำลังซิงค์ข้อมูล...</h2>
+        <p class="text-gray-500 mt-2 text-sm">กรุณารอสักครู่</p>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-brand-blue mb-4">
+                    <i class="fa-solid fa-user-shield text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-brand-blue">เข้าสู่ระบบผู้ดูแล</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ใช้งาน</label>
+                    <input type="text" id="username" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกชื่อผู้ใช้งาน">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue outline-none transition" placeholder="กรอกรหัสผ่าน">
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button onclick="closeLoginModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">ยกเลิก</button>
+                    <button onclick="attemptLogin()" class="flex-1 px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-800 transition font-medium">เข้าสู่ระบบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Data Modal -->
+    <div id="dataModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 id="modalTitle" class="text-2xl font-bold text-brand-blue mb-6 border-b pb-3">จัดการข้อมูลแบบสอบถาม</h2>
+            <input type="hidden" id="editRowId">
+            <input type="hidden" id="editModeType" value="add"> 
+            
+            <div id="dynamicFormFields" class="space-y-4"></div>
+            
+            <div class="pt-6 mt-6 border-t flex gap-3">
+                <button onclick="closeDataModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">ยกเลิก</button>
+                <button onclick="saveData()" class="flex-1 px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-green-600 transition font-medium shadow-lg">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="bg-brand-dark text-white shadow-xl sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row justify-between h-auto lg:h-16 py-3 lg:py-0">
+                <div class="flex items-center justify-center lg:justify-start mb-3 lg:mb-0">
+                    <div class="p-2 bg-brand-pastel/20 rounded-lg mr-3">
+                        <i class="fa-solid fa-graduation-cap text-brand-pastel text-xl"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide text-brand-pastel drop-shadow-md">MU<span class="text-white"> EVALUATION</span></span>
+                </div>
+                <div class="flex flex-wrap items-center justify-center lg:justify-end gap-2">
+                    
+                    <div class="flex items-center bg-white/10 rounded-lg p-1">
+                        <select id="importFormat" class="bg-transparent text-white text-sm outline-none px-2 py-1 cursor-pointer">
+                            <option value="excel" class="text-gray-800">Excel</option>
+                            <option value="csv" class="text-gray-800">CSV</option>
+                        </select>
+                        <input type="file" id="fileInput" class="hidden" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(event)">
+                        <button onclick="document.getElementById('fileInput').click()" class="px-3 py-1.5 rounded bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2 text-brand-pastel"></i> นำเข้า
+                        </button>
+                    </div>
+
+                    <button onclick="exportToPDF()" id="pdfBtn" class="px-4 py-2 rounded-lg bg-brand-green hover:bg-green-600 text-white text-sm font-bold transition flex items-center shadow-lg">
+                        <i class="fa-solid fa-file-pdf mr-2"></i> Export A4
+                    </button>
+                    
+                    <button id="loginBtn" onclick="openLoginModal()" class="px-4 py-2 rounded-lg border border-brand-pastel/50 text-brand-pastel hover:bg-brand-pastel hover:text-brand-dark text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-lock mr-2"></i> Admin
+                    </button>
+                    
+                    <button id="logoutBtn" onclick="logout()" class="hidden px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-sign-out-alt mr-2"></i> ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="dashboardContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        
+        <!-- Header Banner -->
+        <div class="mb-8 text-center bg-gradient-to-r from-brand-dark via-brand-blue to-blue-800 rounded-3xl p-8 md:p-10 shadow-xl text-white relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+            <h1 class="text-2xl md:text-4xl font-bold mb-3 relative z-10 drop-shadow-lg leading-tight">รายงานผลประเมินการจัดการเรียนการสอน</h1>
+            <p class="text-brand-pastel text-base md:text-xl font-light relative z-10 leading-relaxed">
+                หลักสูตรสาธารณสุขศาสตรบัณฑิต โครงการจัดตั้งวิทยาเขตอำนาจเจริญ มหาวิทยาลัยมหิดล
+            </p>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="glass-card rounded-2xl p-6 mb-8 border-t-4 border-t-brand-blue" data-html2canvas-ignore="true">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-5 border-b pb-4">
+                <h3 class="text-lg font-bold text-brand-dark flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg mr-3 text-brand-blue"><i class="fa-solid fa-filter"></i></div>
+                    ตัวกรองข้อมูล
+                </h3>
+                <div class="space-x-2 mt-4 md:mt-0 flex">
+                    <button onclick="selectAllFilters()" class="px-4 py-2 text-xs font-semibold bg-brand-blue text-white rounded-lg hover:bg-blue-800 transition shadow-md">
+                        <i class="fa-solid fa-check-double mr-1"></i> เลือกทั้งหมด
+                    </button>
+                    <button onclick="clearAllFilters()" class="px-4 py-2 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition shadow-sm">
+                        <i class="fa-solid fa-eraser mr-1"></i> ล้างตัวกรอง
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h4 class="font-bold text-brand-blue mb-4 text-sm flex items-center"><i class="fa-regular fa-calendar mr-2"></i> ปีการศึกษา</h4>
+                    <div id="yearFilters" class="flex flex-wrap gap-4"></div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h4 class="font-bold text-brand-blue mb-4 text-sm flex items-center"><i class="fa-solid fa-layer-group mr-2"></i> ภาคเรียน</h4>
+                    <div id="termFilters" class="flex flex-wrap gap-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute -right-6 -top-6 text-blue-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                    <i class="fa-solid fa-users text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center mb-2">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-blue flex items-center justify-center mr-3"><i class="fa-solid fa-user-check"></i></div>
+                        <p class="text-sm text-gray-600 font-semibold">จำนวนผู้ตอบแบบประเมินรวม</p>
+                    </div>
+                    <div class="flex items-end mt-4">
+                        <h2 id="kpiRespondents" class="text-4xl font-bold text-brand-dark">0</h2>
+                        <span class="text-sm text-gray-500 ml-2 mb-1">คน</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute -right-6 -top-6 text-green-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                    <i class="fa-solid fa-star text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center mb-2">
+                        <div class="w-10 h-10 rounded-full bg-green-100 text-brand-green flex items-center justify-center mr-3"><i class="fa-solid fa-chart-pie"></i></div>
+                        <p class="text-sm text-gray-600 font-semibold">ความพึงพอใจเฉลี่ย (1-5)</p>
+                    </div>
+                    <div class="flex items-end mt-4">
+                        <h2 id="kpiAvgScore" class="text-4xl font-bold text-brand-dark">0.00</h2>
+                        <span class="text-sm text-gray-500 ml-2 mb-1">คะแนน</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute -right-6 -top-6 text-yellow-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                    <i class="fa-solid fa-trophy text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center mb-2">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3"><i class="fa-solid fa-award"></i></div>
+                        <p class="text-sm text-gray-600 font-semibold">หัวข้อที่ได้คะแนนสูงสุด</p>
+                    </div>
+                    <div class="mt-3">
+                        <h2 id="kpiTopScore" class="text-base font-bold text-brand-dark leading-tight line-clamp-2" title="-">-</h2>
+                        <div class="inline-block mt-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-bold shadow-sm" id="kpiTopScoreVal">
+                            เฉลี่ย 0.00
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Bar Chart Area (Yearly Comparison) -->
+        <div class="glass-card rounded-2xl p-6 mb-8 flex flex-col items-center">
+            <h3 class="text-lg font-bold text-brand-blue mb-1 w-full text-center">เปรียบเทียบความพึงพอใจเฉลี่ยรายปีการศึกษา</h3>
+            <p class="text-xs text-gray-500 mb-6 w-full text-center">แสดงค่าเฉลี่ยรวมทุกภาคเรียนในแต่ละปี</p>
+            <div class="w-full relative min-h-[300px]">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Pie & Line Charts Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="glass-card rounded-2xl p-6 flex flex-col items-center">
+                <h3 class="text-lg font-bold text-brand-blue mb-1 w-full text-center">คะแนนประเมินรายหัวข้อ</h3>
+                <p class="text-xs text-gray-500 mb-6 w-full text-center">(แสดง 10 ด้าน เรียงจากมากไปน้อย)</p>
+                <div class="w-full relative flex-grow min-h-[350px]">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-6 flex flex-col">
+                <h3 class="text-lg font-bold text-brand-blue mb-1 text-center">เปรียบเทียบความพึงพอใจเฉลี่ยรายภาคเรียน</h3>
+                <p class="text-xs text-gray-500 mb-6 text-center">จำแนกตามปีการศึกษา <span class="text-brand-accent font-bold">(จุดสีแดง = ค่าเฉลี่ยสูงสุด)</span></p>
+                <div class="w-full relative flex-grow min-h-[350px]">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gemini AI Executive Report Area -->
+        <div class="glass-card rounded-2xl p-8 mb-8 border-t-4 border-t-purple-500 relative overflow-hidden" data-html2canvas-ignore="true">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-brand-dark flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        Executive Report (AI Generated)
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1 ml-14">สร้างรายงานสรุปเชิงบริหาร พร้อมข้อเสนอแนะด้วย Gemini AI</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <!-- Export Buttons (Hidden initially) -->
+                    <div id="aiExportButtons" class="hidden flex gap-2">
+                        <button onclick="exportAIReportPDF()" id="btnExportAIPDF" class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center">
+                            <i class="fa-solid fa-file-pdf mr-2"></i> PDF
+                        </button>
+                        <button onclick="exportAIReportWord()" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition font-medium text-sm flex items-center">
+                            <i class="fa-solid fa-file-word mr-2"></i> Word
+                        </button>
+                    </div>
+
+                    <button onclick="generateAIReport()" id="aiBtn" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-medium shadow-lg flex items-center">
+                        <i class="fa-solid fa-robot mr-2"></i> สร้างรายงาน
+                    </button>
+                </div>
+            </div>
+            <div id="aiReportContent" class="hidden bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div id="aiText" class="prose prose-indigo max-w-none font-sans text-gray-700"></div>
+            </div>
+        </div>
+
+        <!-- Admin Table Area -->
+        <div id="adminArea" class="hidden glass-card rounded-2xl p-8 mb-8 border-t-4 border-t-brand-green relative overflow-hidden" data-html2canvas-ignore="true">
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-brand-dark flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-green-100 text-brand-green flex items-center justify-center mr-3">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
+                            จัดการข้อมูลดิบ (Admin Mode)
+                        </h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <div class="flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
+                            <select id="exportFormat" class="bg-transparent text-gray-700 text-sm outline-none px-2 py-1 cursor-pointer font-medium">
+                                <option value="excel">Excel</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                            <button onclick="exportData()" class="px-4 py-1.5 bg-gray-800 text-white rounded hover:bg-gray-900 transition font-medium text-sm flex items-center">
+                                <i class="fa-solid fa-download mr-2"></i> Export
+                            </button>
+                        </div>
+
+                        <button onclick="openAddModal()" class="px-5 py-2 bg-brand-green text-white rounded-lg hover:bg-green-600 transition font-medium text-sm flex items-center shadow-md">
+                            <i class="fa-solid fa-plus mr-2"></i> เพิ่มข้อมูลผู้ประเมินใหม่
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm mt-4">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="px-5 py-4 text-left font-bold tracking-wider">ปีการศึกษา</th>
+                                <th class="px-5 py-4 text-left font-bold tracking-wider">ภาคเรียน</th>
+                                <th class="px-5 py-4 text-left font-bold tracking-wider">รหัสผู้ประเมิน</th>
+                                <th class="px-5 py-4 text-left font-bold tracking-wider w-1/3">หัวข้อคำถาม</th>
+                                <th class="px-5 py-4 text-center font-bold tracking-wider">คะแนน</th>
+                                <th class="px-5 py-4 text-center font-bold tracking-wider">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 gap-4">
+                    <span id="tableInfo" class="font-medium bg-gray-100 px-3 py-1 rounded-full">แสดง 0 รายการ</span>
+                    <div class="flex space-x-2" id="paginationControls"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Logic Script -->
+    <script>
+        // --- State Management ---
+        let rawData = [];
+        let filteredData = [];
+        let uniqueYears = [];
+        let uniqueTerms = [];
+        let selectedYears = new Set();
+        let selectedTerms = new Set();
+        let isAdmin = false;
+        
+        // Chart instances
+        let pieChartInstance = null;
+        let lineChartInstance = null;
+        let barChartInstance = null; // New chart instance
+
+        // Configuration
+        const GOOGLE_SHEET_ID = '1GjvdDDN0Jqy3WtPkMkDpKLyti0Iejwmwsw3jNFdVq-g';
+        const SHEET_NAME = 'ความพึงพอใจ (Reshape)';
+
+        // Keys mapping
+        let keys = { year: '', term: '', question: '', score: '', respondent: '' };
+        
+        // Default 10 Questions
+        const defaultQuestions = [
+            "1. ความชัดเจนในการอธิบายเนื้อหา", "2. การเตรียมความพร้อมในการสอน",
+            "3. การใช้สื่อประกอบการสอน", "4. การเปิดโอกาสให้ซักถาม",
+            "5. ความเหมาะสมของการวัดประเมินผล", "6. การตรงต่อเวลา",
+            "7. การประยุกต์ใช้ความรู้", "8. ความกระตือรือร้นในการสอน",
+            "9. การจัดบรรยากาศการเรียนรู้", "10. ความพึงพอใจโดยรวม"
+        ];
+        let uniqueQuestionsList = [];
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchGoogleSheetData();
+        });
+
+        // --- Fetch & Process ---
+        function fetchGoogleSheetData() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+            
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) { processIncomingData(results.data); },
+                error: function(err) {
+                    console.error(err);
+                    alert("ไม่สามารถดึงข้อมูลอัตโนมัติจากระบบได้ กรุณาใช้ปุ่ม 'นำเข้า'");
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }
+            });
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingText').innerText = "กำลังนำเข้าข้อมูล...";
+            
+            const format = document.getElementById('importFormat').value;
+            
+            if (format === 'csv' || file.name.endsWith('.csv')) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) { processIncomingData(results.data); }
+                });
+            } else {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.SheetNames[0];
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+                    processIncomingData(json);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function processIncomingData(data) {
+            if (!data || data.length === 0) {
+                alert("ไม่พบข้อมูล หรือไฟล์ว่างเปล่า");
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            keys.year = headers.find(h => h.includes('ปี') || h.toLowerCase().includes('year')) || headers[0];
+            keys.term = headers.find(h => h.includes('ภาค') || h.includes('เทอม') || h.toLowerCase().includes('term')) || headers[1];
+            keys.question = headers.find(h => h.includes('ข้อ') || h.includes('คำถาม') || h.toLowerCase().includes('question')) || headers[2];
+            keys.score = headers.find(h => h.includes('คะแนน') || h.includes('ระดับ') || h.toLowerCase().includes('score')) || headers[3];
+            keys.respondent = headers.find(h => h.includes('ผู้ประเมิน') || h.includes('รหัส') || h.includes('เวลา') || h.toLowerCase().includes('id') || h.toLowerCase().includes('timestamp')) || 'ID_Gen';
+
+            rawData = data.map((row, index) => {
+                let q = row[keys.question] ? String(row[keys.question]).trim() : '';
+                q = q.replace(/^0+([1-9])(\.|\s)/, '$1$2');
+                
+                let s = parseFloat(row[keys.score]);
+                if (isNaN(s)) s = 0;
+                if (s > 5) s = 5;
+                if (s < 1) s = 1;
+
+                return {
+                    _id: Date.now() + index,
+                    year: String(row[keys.year] || 'ไม่ระบุ').trim(),
+                    term: String(row[keys.term] || 'ไม่ระบุ').trim(),
+                    question: q,
+                    score: s,
+                    respondent: row[keys.respondent] ? String(row[keys.respondent]).trim() : `ID_${Math.floor(index/10)}`
+                };
+            }).filter(r => r.question !== ''); 
+            
+            const qSet = [...new Set(rawData.map(d => d.question))];
+            uniqueQuestionsList = qSet.length >= 10 ? qSet.slice(0, 10) : defaultQuestions;
+
+            extractFilters();
+            applyFilters();
+            
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('fileInput').value = ''; 
+        }
+
+        // --- Filters ---
+        function extractFilters() {
+            uniqueYears = [...new Set(rawData.map(d => d.year))].sort((a,b)=>b-a); 
+            uniqueTerms = [...new Set(rawData.map(d => d.term))].sort();
+            selectedYears = new Set(uniqueYears);
+            selectedTerms = new Set(uniqueTerms);
+            renderFilterUI();
+        }
+
+        function renderFilterUI() {
+            document.getElementById('yearFilters').innerHTML = uniqueYears.map(y => `
+                <label class="flex items-center cursor-pointer group">
+                    <div class="relative flex items-center">
+                        <input type="checkbox" class="custom-checkbox opacity-0 absolute h-5 w-5 cursor-pointer z-10" value="${y}" checked onchange="toggleFilter('year', '${y}')">
+                        <div class="bg-white border-2 rounded-md border-gray-300 w-5 h-5 flex flex-shrink-0 justify-center items-center mr-2 group-hover:border-brand-blue transition">
+                            <svg class="fill-current hidden w-3 h-3 text-white pointer-events-none" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/></svg>
+                        </div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 select-none">${y}</span>
+                </label>
+            `).join('');
+
+            document.getElementById('termFilters').innerHTML = uniqueTerms.map(t => `
+                <label class="flex items-center cursor-pointer group">
+                    <div class="relative flex items-center">
+                        <input type="checkbox" class="custom-checkbox opacity-0 absolute h-5 w-5 cursor-pointer z-10" value="${t}" checked onchange="toggleFilter('term', '${t}')">
+                        <div class="bg-white border-2 rounded-md border-gray-300 w-5 h-5 flex flex-shrink-0 justify-center items-center mr-2 group-hover:border-brand-blue transition">
+                            <svg class="fill-current hidden w-3 h-3 text-white pointer-events-none" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/></svg>
+                        </div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 select-none">เทอม ${t}</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleFilter(type, value) {
+            const set = type === 'year' ? selectedYears : selectedTerms;
+            if (set.has(value)) set.delete(value); else set.add(value);
+            applyFilters();
+        }
+
+        function selectAllFilters() {
+            selectedYears = new Set(uniqueYears);
+            selectedTerms = new Set(uniqueTerms);
+            document.querySelectorAll('#yearFilters input, #termFilters input').forEach(cb => cb.checked = true);
+            applyFilters();
+        }
+
+        function clearAllFilters() {
+            selectedYears.clear();
+            selectedTerms.clear();
+            document.querySelectorAll('#yearFilters input, #termFilters input').forEach(cb => cb.checked = false);
+            applyFilters();
+        }
+
+        function applyFilters() {
+            filteredData = rawData.filter(d => selectedYears.has(d.year) && selectedTerms.has(d.term));
+            updateDashboard();
+            if (isAdmin) { currentPage = 1; renderAdminTable(); }
+        }
+
+        // --- Dashboard Computation ---
+        function updateDashboard() {
+            if (filteredData.length === 0) {
+                document.getElementById('kpiRespondents').innerText = '0';
+                document.getElementById('kpiAvgScore').innerText = '0.00';
+                document.getElementById('kpiTopScore').innerText = 'ไม่พบข้อมูล';
+                document.getElementById('kpiTopScoreVal').innerText = 'เฉลี่ย 0.00';
+                if(pieChartInstance) pieChartInstance.destroy();
+                if(lineChartInstance) lineChartInstance.destroy();
+                if(barChartInstance) barChartInstance.destroy();
+                return;
+            }
+
+            const totalRespondents = Math.floor(filteredData.length / 10);
+            document.getElementById('kpiRespondents').innerText = totalRespondents.toLocaleString();
+
+            const totalScore = filteredData.reduce((sum, d) => sum + d.score, 0);
+            const avgScore = (totalScore / filteredData.length).toFixed(2);
+            document.getElementById('kpiAvgScore').innerText = avgScore;
+
+            const questionStats = {};
+            filteredData.forEach(d => {
+                if (!questionStats[d.question]) questionStats[d.question] = { sum: 0, count: 0 };
+                questionStats[d.question].sum += d.score;
+                questionStats[d.question].count++;
+            });
+
+            const qArray = Object.keys(questionStats).map(q => ({
+                question: q,
+                avg: questionStats[q].sum / questionStats[q].count
+            })).sort((a, b) => b.avg - a.avg);
+
+            if (qArray.length > 0) {
+                document.getElementById('kpiTopScore').innerText = qArray[0].question;
+                document.getElementById('kpiTopScoreVal').innerText = `เฉลี่ย ${qArray[0].avg.toFixed(2)}`;
+            }
+
+            renderBarChart(); // New Bar Chart
+            renderPieChart(qArray.slice(0, 10)); 
+            renderLineChart();
+        }
+
+        // --- Charts ---
+        Chart.defaults.font.family = "'Prompt', sans-serif";
+        const palette = ['#1e3a8a', '#10b981', '#3b82f6', '#34d399', '#6366f1', '#059669', '#818cf8', '#6ee7b7', '#4338ca', '#a7f3d0'];
+
+        // 1. New Bar Chart (Yearly)
+        function renderBarChart() {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            // Sort years in ascending order for the chart (oldest to newest left to right)
+            const yearsToChart = Array.from(selectedYears).sort();
+            
+            const yearAverages = yearsToChart.map(year => {
+                const yearData = filteredData.filter(d => d.year === year);
+                if (yearData.length === 0) return 0;
+                const sum = yearData.reduce((acc, val) => acc + val.score, 0);
+                return parseFloat((sum / yearData.length).toFixed(2));
+            });
+
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: yearsToChart.map(y => `ปีการศึกษา ${y}`),
+                    datasets: [{
+                        label: 'ความพึงพอใจเฉลี่ย',
+                        data: yearAverages,
+                        backgroundColor: '#3b82f6', // สีน้ำเงินสว่าง
+                        borderRadius: 6,
+                        maxBarThickness: 80
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            min: 1, max: 5, 
+                            title: { display: true, text: 'คะแนนเฉลี่ย', font: { weight: 'bold' } },
+                            grid: { color: '#e2e8f0' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: { label: (context) => ` เฉลี่ย: ${context.raw} / 5.00` }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Pie Chart
+        function renderPieChart(qArray) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+
+            const labels = qArray.map(q => q.question.length > 35 ? q.question.substring(0, 35) + '...' : q.question);
+            const data = qArray.map(q => q.avg.toFixed(2));
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: palette,
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: 10 },
+                    plugins: {
+                        legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
+                        tooltip: { callbacks: { label: (context) => ` เฉลี่ย: ${context.raw} / 5.00` } }
+                    },
+                    cutout: '55%'
+                }
+            });
+        }
+
+        // 3. Line Chart
+        function renderLineChart() {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            const yearsToChart = Array.from(selectedYears).sort();
+            const termsToChart = Array.from(selectedTerms).sort();
+            let maxScore = -1;
+
+            yearsToChart.forEach(year => {
+                termsToChart.forEach(term => {
+                    const filtered = filteredData.filter(d => d.year === year && d.term === term);
+                    if (filtered.length > 0) {
+                        const avg = parseFloat((filtered.reduce((a, b) => a + b.score, 0) / filtered.length).toFixed(2));
+                        if (avg > maxScore) maxScore = avg;
+                    }
+                });
+            });
+
+            const datasets = yearsToChart.map((year, i) => {
+                const dataPoints = termsToChart.map(term => {
+                    const filtered = filteredData.filter(d => d.year === year && d.term === term);
+                    if (filtered.length === 0) return null;
+                    return parseFloat((filtered.reduce((a, b) => a + b.score, 0) / filtered.length).toFixed(2));
+                });
+
+                const color = palette[i % palette.length];
+                return {
+                    label: `ปีการศึกษา ${year}`,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 3,
+                    pointBackgroundColor: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? '#f43f5e' : '#ffffff',
+                    pointBorderColor: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? '#be123c' : color,
+                    pointRadius: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 10 : 5,
+                    pointHoverRadius: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 12 : 7,
+                    pointBorderWidth: (ctx) => ctx.raw === maxScore && ctx.raw !== null ? 3 : 2,
+                    fill: true,
+                    tension: 0.3
+                };
+            });
+
+            lineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: termsToChart.map(t => `ภาคเรียน ${t}`), datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 1, max: 5, title: { display: true, text: 'คะแนน', font: { weight: 'bold' } } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const isMax = ctx.raw === maxScore ? ' (สูงสุด)' : '';
+                                    return ` ${ctx.dataset.label}: ${ctx.raw} ${isMax}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- AI Executive Report (Gemini) ---
+        async function generateAIReport() {
+            const btn = document.getElementById('aiBtn');
+            const contentDiv = document.getElementById('aiReportContent');
+            const textDiv = document.getElementById('aiText');
+            const exportBtns = document.getElementById('aiExportButtons');
+            
+            if(filteredData.length === 0) {
+                alert("ไม่มีข้อมูลสำหรับวิเคราะห์ กรุณาตรวจสอบตัวกรองข้อมูล");
+                return;
+            }
+
+            exportBtns.classList.add('hidden'); // ซ่อนปุ่ม export ระหว่างโหลด
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังวิเคราะห์...';
+            btn.classList.add('opacity-75', 'cursor-wait');
+            contentDiv.classList.remove('hidden');
+            textDiv.innerHTML = '<p class="text-center text-gray-500 py-10"><i class="fa-solid fa-robot fa-bounce text-3xl mb-3"></i><br>AI กำลังประมวลผลข้อมูลและเขียนรายงาน...</p>';
+
+            try {
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const totalRes = document.getElementById('kpiRespondents').innerText;
+                const avgScore = document.getElementById('kpiAvgScore').innerText;
+                const topQ = document.getElementById('kpiTopScore').innerText;
+                
+                const questionStats = {};
+                filteredData.forEach(d => {
+                    if (!questionStats[d.question]) questionStats[d.question] = { sum: 0, count: 0 };
+                    questionStats[d.question].sum += d.score;
+                    questionStats[d.question].count++;
+                });
+                const qSummary = Object.keys(questionStats).map(q => 
+                    `${q}: ${(questionStats[q].sum / questionStats[q].count).toFixed(2)}`
+                ).join("\n");
+
+                const prompt = `ในฐานะผู้เชี่ยวชาญด้านการวิเคราะห์ข้อมูลและพัฒนาการศึกษา กรุณาเขียน "รายงานสรุปสำหรับผู้บริหาร (Executive Report)" จากข้อมูลการประเมินการสอนต่อไปนี้ สรุปให้กระชับ เป็นมืออาชีพ (ภาษาไทย)
+
+ข้อมูลภาพรวม:
+- จำนวนผู้ตอบประเมิน: ${totalRes} คน
+- คะแนนความพึงพอใจเฉลี่ยรวม: ${avgScore} จาก 5 คะแนน
+- หัวข้อที่ได้คะแนนสูงสุด: ${topQ}
+
+ข้อมูลคะแนนเฉลี่ยรายข้อ:
+${qSummary}
+
+กรุณาเขียนรายงานโดยแบ่งเป็น 4 หัวข้อหลัก:
+1. ภาพรวมการประเมิน
+2. จุดเด่นและสิ่งที่ทำได้ดี
+3. ประเด็นที่ควรได้รับการพัฒนา (ดูจากข้อที่คะแนนต่ำ)
+4. ข้อเสนอแนะเชิงกลยุทธ์สำหรับผู้บริหาร`;
+
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+                const retries = 5;
+                const backoffs = [1000, 2000, 4000, 8000, 16000];
+                let resultText = "";
+
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const result = await response.json();
+                        resultText = result.candidates?.[0]?.content?.parts?.[0]?.text || "เกิดข้อผิดพลาดในการแปลผลจาก AI";
+                        break;
+                    } catch (error) {
+                        if (i === retries - 1) throw error;
+                        await new Promise(res => setTimeout(res, backoffs[i]));
+                    }
+                }
+
+                textDiv.innerHTML = marked.parse(resultText);
+                exportBtns.classList.remove('hidden'); // แสดงปุ่ม export เมื่อเสร็จสิ้น
+
+            } catch (err) {
+                console.error(err);
+                textDiv.innerHTML = '<p class="text-red-500 font-bold p-4">ไม่สามารถเชื่อมต่อกับ AI ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง (Environment อาจไม่รองรับ API Key)</p>';
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-robot mr-2"></i> สร้างใหม่';
+                btn.classList.remove('opacity-75', 'cursor-wait');
+            }
+        }
+
+        // --- Export Executive Report (Word / PDF) ---
+        function exportAIReportWord() {
+            const content = document.getElementById('aiText').innerHTML;
+            // เพิ่ม Boilerplate ของ Word และกำหนดฟอนต์มาตรฐาน
+            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>Executive Report</title>
+            <style>
+                body { font-family: 'Sarabun', 'TH Sarabun New', sans-serif; font-size: 16pt; line-height: 1.5; }
+                h1, h2, h3 { color: #1e3a8a; }
+            </style></head><body>
+            <h2 style="text-align:center;">รายงานสรุปสำหรับผู้บริหาร (Executive Report)</h2><br>`;
+            const footer = "</body></html>";
+            
+            const sourceHTML = header + content + footer;
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = 'Executive_Report.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+
+        async function exportAIReportPDF() {
+            const btn = document.getElementById('btnExportAIPDF');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> ...';
+            btn.classList.add('opacity-50', 'cursor-wait');
+
+            try {
+                // สร้าง div จำลองขนาดเท่า A4 เพื่อจัดหน้ากกระดาษก่อน capture
+                const tempDiv = document.createElement('div');
+                tempDiv.style.width = '794px'; // ความกว้าง A4 ที่ 96 DPI
+                tempDiv.style.padding = '40px 50px';
+                tempDiv.style.backgroundColor = 'white';
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.top = '-9999px';
+                tempDiv.style.fontFamily = "'Prompt', sans-serif";
+                tempDiv.style.color = '#1f2937';
+                
+                // คัดลอกเนื้อหาและสไตล์เบื้องต้น
+                tempDiv.innerHTML = `
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <h2 style="color: #1e3a8a; font-size: 24px; font-weight: bold; margin-bottom: 5px;">รายงานสรุปสำหรับผู้บริหาร (Executive Report)</h2>
+                        <p style="color: #6b7280; font-size: 14px;">หลักสูตรสาธารณสุขศาสตรบัณฑิต โครงการจัดตั้งวิทยาเขตอำนาจเจริญ มหาวิทยาลัยมหิดล</p>
+                        <hr style="margin-top: 15px; border: 1px solid #e5e7eb;">
+                    </div>
+                    <div class="prose max-w-none" style="font-size: 16px; line-height: 1.6;">
+                        ${document.getElementById('aiText').innerHTML}
+                    </div>
+                `;
+                document.body.appendChild(tempDiv);
+
+                // แปลงสไตล์ให้ html2canvas อ่านได้ (แทนที่ class ของ tailwind ด้วย inline style เบื้องต้น)
+                const headings = tempDiv.querySelectorAll('h1, h2, h3');
+                headings.forEach(h => { h.style.color = '#1e3a8a'; h.style.fontWeight = 'bold'; h.style.marginTop = '20px'; h.style.marginBottom = '10px'; });
+                const lists = tempDiv.querySelectorAll('ul');
+                lists.forEach(l => { l.style.paddingLeft = '20px'; l.style.listStyleType = 'disc'; l.style.marginBottom = '15px'; });
+
+                const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true });
+                document.body.removeChild(tempDiv);
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                
+                // คำนวณความสูงของรูปภาพให้สอดคล้องกับความกว้าง A4
+                const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // แปะหน้าแรก
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // หากเนื้อหายาวเกิน 1 หน้า ให้ขึ้นหน้าใหม่
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight; // เลื่อนตำแหน่ง Y ขึ้นไปเพื่อโชว์ส่วนที่เหลือ
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save('Executive_Report_AI.pdf');
+
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการสร้าง PDF');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-50', 'cursor-wait');
+            }
+        }
+
+        // --- Admin & Auth ---
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { 
+            document.getElementById('loginModal').classList.add('hidden'); 
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+        function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if (u === 'admin' && p === '1234') {
+                isAdmin = true;
+                closeLoginModal();
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('adminArea').classList.remove('hidden');
+                renderAdminTable();
+            } else { alert('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง'); }
+        }
+        function logout() {
+            isAdmin = false;
+            document.getElementById('loginBtn').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('adminArea').classList.add('hidden');
+        }
+
+        // --- CRUD Logic ---
+        let currentPage = 1;
+        const rowsPerPage = 50;
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = filteredData.slice(start, end);
+
+            paginatedData.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="px-5 py-3 whitespace-nowrap text-gray-700">${d.year}</td>
+                    <td class="px-5 py-3 whitespace-nowrap text-gray-600">${d.term}</td>
+                    <td class="px-5 py-3 whitespace-nowrap text-gray-500 font-mono text-xs">${d.respondent.substring(0,20)}</td>
+                    <td class="px-5 py-3 text-gray-800">${d.question}</td>
+                    <td class="px-5 py-3 text-center"><span class="px-3 py-1 bg-blue-100 text-brand-blue font-bold rounded-full">${d.score}</span></td>
+                    <td class="px-5 py-3 text-center whitespace-nowrap">
+                        <button onclick="openEditSingleModal(${d._id})" class="text-blue-500 hover:text-blue-700 mr-3" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
+                        <button onclick="deleteData(${d._id})" class="text-red-500 hover:text-red-700" title="ลบ"><i class="fa-solid fa-trash-can text-lg"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const total = filteredData.length;
+            document.getElementById('tableInfo').innerText = `แสดง ${total > 0 ? start + 1 : 0} ถึง ${Math.min(end, total)} จาก ${total} รายการ`;
+            
+            const totalPages = Math.ceil(total / rowsPerPage);
+            let pageBtns = '';
+            if(currentPage > 1) pageBtns += `<button onclick="changePage(-1)" class="px-3 py-1.5 border rounded hover:bg-gray-50">ก่อนหน้า</button>`;
+            if(currentPage < totalPages) pageBtns += `<button onclick="changePage(1)" class="px-3 py-1.5 border rounded hover:bg-gray-50">ถัดไป</button>`;
+            document.getElementById('paginationControls').innerHTML = pageBtns;
+        }
+
+        function changePage(dir) { currentPage += dir; renderAdminTable(); }
+
+        function closeDataModal() { document.getElementById('dataModal').classList.add('hidden'); }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').innerText = 'เพิ่มข้อมูลผู้ประเมินใหม่ (10 ข้อ)';
+            document.getElementById('editRowId').value = '';
+            document.getElementById('editModeType').value = 'add';
+            
+            let html = `
+                <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg mb-4 border">
+                    <div><label class="block text-sm font-semibold mb-1">ปีการศึกษา</label><input type="text" id="f_year" class="w-full border p-2 rounded" placeholder="เช่น 2566"></div>
+                    <div><label class="block text-sm font-semibold mb-1">ภาคเรียน</label><input type="text" id="f_term" class="w-full border p-2 rounded" placeholder="เช่น 1 หรือ 2"></div>
+                    <div class="col-span-2"><label class="block text-sm font-semibold mb-1">รหัสผู้ประเมิน (อัตโนมัติหรือกำหนดเอง)</label><input type="text" id="f_res" class="w-full border p-2 rounded" value="USER_${Date.now().toString().slice(-6)}"></div>
+                </div>
+                <h4 class="font-bold text-brand-blue mb-2">กรอกคะแนน (1-5) ตามหัวข้อ</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            `;
+            
+            uniqueQuestionsList.forEach((q, i) => {
+                html += `
+                    <div class="bg-white p-3 border rounded shadow-sm">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1 truncate" title="${q}">${q}</label>
+                        <input type="number" min="1" max="5" id="f_q_${i}" class="w-full border p-2 rounded font-bold text-brand-blue" value="5">
+                        <input type="hidden" id="f_qtext_${i}" value="${q}">
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            document.getElementById('dynamicFormFields').innerHTML = html;
+            document.getElementById('dataModal').classList.remove('hidden');
+        }
+
+        function openEditSingleModal(id) {
+            document.getElementById('modalTitle').innerText = 'แก้ไขข้อมูล (1 รายการ)';
+            document.getElementById('editRowId').value = id;
+            document.getElementById('editModeType').value = 'edit_single';
+            const item = rawData.find(d => d._id === id);
+            
+            const html = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-semibold mb-1">ปีการศึกษา</label><input type="text" id="f_year" class="w-full border p-2 rounded" value="${item.year}"></div>
+                    <div><label class="block text-sm font-semibold mb-1">ภาคเรียน</label><input type="text" id="f_term" class="w-full border p-2 rounded" value="${item.term}"></div>
+                </div>
+                <div><label class="block text-sm font-semibold mb-1">ผู้ประเมิน</label><input type="text" id="f_res" class="w-full border p-2 rounded" value="${item.respondent}"></div>
+                <div><label class="block text-sm font-semibold mb-1">หัวข้อคำถาม</label><input type="text" id="f_qtext_0" class="w-full border p-2 rounded bg-gray-100" value="${item.question}" readonly></div>
+                <div><label class="block text-sm font-semibold mb-1">คะแนน (1-5)</label><input type="number" min="1" max="5" id="f_q_0" class="w-full border p-2 rounded font-bold text-brand-blue" value="${item.score}"></div>
+            `;
+            document.getElementById('dynamicFormFields').innerHTML = html;
+            document.getElementById('dataModal').classList.remove('hidden');
+        }
+
+        function saveData() {
+            const mode = document.getElementById('editModeType').value;
+            const year = document.getElementById('f_year').value.trim();
+            const term = document.getElementById('f_term').value.trim();
+            const res = document.getElementById('f_res').value.trim();
+
+            if(!year || !term) { alert("กรุณากรอก ปี และ ภาคเรียน"); return; }
+
+            if (mode === 'add') {
+                const newEntries = [];
+                for(let i=0; i<uniqueQuestionsList.length; i++) {
+                    const qText = document.getElementById(`f_qtext_${i}`).value;
+                    let score = parseFloat(document.getElementById(`f_q_${i}`).value) || 0;
+                    if(score > 5) score = 5; if(score < 1) score = 1;
+                    
+                    newEntries.push({
+                        _id: Date.now() + i,
+                        year: year, term: term, respondent: res,
+                        question: qText, score: score
+                    });
+                }
+                rawData.push(...newEntries);
+                alert("เพิ่มข้อมูล 10 รายการสำเร็จ");
+            } else {
+                const id = parseInt(document.getElementById('editRowId').value);
+                const qText = document.getElementById(`f_qtext_0`).value;
+                let score = parseFloat(document.getElementById(`f_q_0`).value) || 0;
+                if(score > 5) score = 5; if(score < 1) score = 1;
+
+                const index = rawData.findIndex(d => d._id === id);
+                if (index > -1) {
+                    rawData[index] = { ...rawData[index], year, term, respondent: res, question: qText, score };
+                }
+                alert("อัปเดตข้อมูลสำเร็จ");
+            }
+
+            closeDataModal();
+            extractFilters(); 
+            applyFilters();
+        }
+
+        function deleteData(id) {
+            if (confirm('ยืนยันการลบข้อมูลนี้?')) {
+                rawData = rawData.filter(d => d._id !== id);
+                extractFilters();
+                applyFilters();
+            }
+        }
+
+        // --- Export CSV / Excel (Admin) ---
+        function exportData() {
+            if(rawData.length === 0) { alert("ไม่มีข้อมูลสำหรับ Export"); return; }
+            const format = document.getElementById('exportFormat').value;
+            
+            const dataToExport = rawData.map(d => ({
+                [keys.year || 'ปีการศึกษา']: d.year,
+                [keys.term || 'ภาคเรียน']: d.term,
+                [keys.respondent || 'ผู้ประเมิน']: d.respondent,
+                [keys.question || 'ข้อคำถาม']: d.question,
+                [keys.score || 'คะแนน']: d.score
+            }));
+
+            if (format === 'csv') {
+                const csvString = "\uFEFF" + Papa.unparse(dataToExport);
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "Teaching_Evaluation_Export.csv";
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            } else {
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Evaluation_Data");
+                XLSX.writeFile(wb, "Teaching_Evaluation_Export.xlsx");
+            }
+        }
+
+        // --- Export Full Dashboard to PDF ---
+        async function exportToPDF() {
+            const element = document.getElementById('dashboardContent');
+            const btn = document.getElementById('pdfBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> สร้าง PDF...';
+            btn.classList.add('opacity-70', 'cursor-wait');
+
+            try {
+                const ignores = document.querySelectorAll('[data-html2canvas-ignore="true"]');
+                ignores.forEach(el => el.style.display = 'none');
+
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+
+                ignores.forEach(el => el.style.display = '');
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                pdf.save('Teaching_Evaluation_Dashboard.pdf');
+                
+            } catch (err) { alert('เกิดข้อผิดพลาดในการสร้าง PDF'); } 
+            finally { btn.innerHTML = originalHtml; btn.classList.remove('opacity-70', 'cursor-wait'); }
+        }
+
+    </script>
+</body>
+</html>
