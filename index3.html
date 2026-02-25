@@ -1,0 +1,1386 @@
+import React, { useState } from 'react';
+import { 
+  CalendarDays, 
+  GraduationCap, 
+  Users, 
+  MessageCircle, 
+  UserPlus, 
+  LogIn, 
+  LogOut,
+  Mail,
+  Lock,
+  User,
+  Clock,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  ChevronLeft,
+  BookOpen,
+  Search,
+  Award,
+  Archive,
+  Trophy,
+  Star,
+  Medal,
+  MapPin,
+  Phone,
+  Globe,
+  Briefcase,
+  Microscope,
+  Map
+} from 'lucide-react';
+
+export default function App() {
+  // Application State
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'login', 'register', 'booking'
+  const [currentUser, setCurrentUser] = useState(null);
+  const [usersDb, setUsersDb] = useState([]); // Mock Database for users
+
+  // Navigation Helper
+  const navigateTo = (view) => {
+    setCurrentView(view);
+    window.scrollTo(0, 0);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    navigateTo('home');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+      {/* Navbar */}
+      <nav className="bg-[#00246B] text-white shadow-md sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer" 
+              onClick={() => navigateTo('home')}
+            >
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                <span className="text-[#00246B] font-bold text-xl">A</span>
+              </div>
+              <span className="font-semibold text-xl tracking-wide hidden sm:block">AMPH Insight Hub</span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {currentUser ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-blue-200 hidden sm:block">
+                    รหัสนักศึกษา: {currentUser.studentId}
+                  </span>
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center space-x-1 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-md transition-colors text-sm"
+                  >
+                    <LogOut size={16} />
+                    <span>ออกจากระบบ</span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => navigateTo('login')}
+                  className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md transition-colors font-medium text-sm"
+                >
+                  <LogIn size={16} />
+                  <span>เข้าสู่ระบบ นศ.</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {currentView === 'home' && (
+          <HomeView navigateTo={navigateTo} currentUser={currentUser} />
+        )}
+        {currentView === 'login' && (
+          <LoginView 
+            navigateTo={navigateTo} 
+            usersDb={usersDb} 
+            setCurrentUser={setCurrentUser} 
+          />
+        )}
+        {currentView === 'register' && (
+          <RegisterView 
+            navigateTo={navigateTo} 
+            usersDb={usersDb} 
+            setUsersDb={setUsersDb} 
+          />
+        )}
+        {currentView === 'booking' && (
+          <BookingView currentUser={currentUser} navigateTo={navigateTo} />
+        )}
+        {currentView === 'research' && (
+          <ResearchView navigateTo={navigateTo} />
+        )}
+        {currentView === 'achievements' && (
+          <AchievementsView navigateTo={navigateTo} />
+        )}
+        {currentView === 'faculty' && (
+          <FacultyView navigateTo={navigateTo} />
+        )}
+        {currentView === 'alumni' && (
+          <AlumniView navigateTo={navigateTo} />
+        )}
+        {currentView === 'contact' && (
+          <ContactView navigateTo={navigateTo} />
+        )}
+      </main>
+      
+      {/* Simple Footer */}
+      <footer className="bg-slate-200 py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4 text-center text-slate-500 text-sm">
+          &copy; 2026 AMPH Insight Hub. Mahidol University. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// ==========================================
+// 1. Home View (Beautiful Template)
+// ==========================================
+function HomeView({ navigateTo, currentUser }) {
+  const handleCalendarClick = () => {
+    if (currentUser) {
+      navigateTo('booking');
+    } else {
+      navigateTo('login');
+    }
+  };
+
+  const menuCards = [
+    {
+      title: "ระบบปฏิทินการให้คำปรึกษา",
+      description: "นัดหมายอาจารย์ที่ปรึกษา ขอคำแนะนำด้านการเรียนและการใช้ชีวิต",
+      icon: <CalendarDays size={40} className="text-[#00246B]" />,
+      action: handleCalendarClick,
+      primary: true
+    },
+    {
+      title: "คลังวิจัย (Research)",
+      description: "แหล่งสืบค้นและเรียนรู้องค์ความรู้จากงานวิจัยนักศึกษาที่ผ่านการคัดสรร แยกตามปีการศึกษาและหมวดหมู่สุขภาพที่น่าสนใจ",
+      icon: <BookOpen size={40} className="text-indigo-600" />,
+      action: () => navigateTo('research'),
+      primary: false
+    },
+    {
+      title: "ความสำเร็จ (Achievements)",
+      description: "เชิดชูเกียรติผลงานตีพิมพ์ รางวัลระดับชาติ และเรื่องราวความสำเร็จของนักศึกษา",
+      icon: <Trophy size={40} className="text-amber-500" />,
+      action: () => navigateTo('achievements'),
+      primary: false
+    },
+    {
+      title: "ทำเนียบคณาจารย์ (AMPH Faculty)",
+      description: "ทำเนียบคณาจารย์ผู้เชี่ยวชาญ และทิศทางการขับเคลื่อนงานวิจัยเชิงรุก",
+      icon: <Microscope size={40} className="text-emerald-600" />,
+      action: () => navigateTo('faculty'),
+      primary: false
+    },
+    {
+      title: "ทำเนียบศิษย์เก่า (Alumni)",
+      description: "เชื่อมต่อเครือข่ายบัณฑิตสาธารณสุข แลกเปลี่ยนประสบการณ์การทำงาน",
+      icon: <Users size={40} className="text-cyan-600" />,
+      action: () => navigateTo('alumni'),
+      primary: false
+    },
+    {
+      title: "ติดต่อเรา (Contact)",
+      description: "ช่องทางการสื่อสารข้อมูล สถานที่ตั้ง และแผนที่โครงการจัดตั้งวิทยาเขตฯ",
+      icon: <MapPin size={40} className="text-rose-500" />,
+      action: () => navigateTo('contact'),
+      primary: false
+    }
+  ];
+
+  return (
+    <div className="animate-in fade-in duration-500">
+      {/* Hero Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 md:p-12 mb-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 opacity-50 blur-3xl"></div>
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#00246B] mb-4">
+            ยินดีต้อนรับสู่ AMPH Insight Hub
+          </h1>
+          <p className="text-slate-600 text-lg mb-8 leading-relaxed">
+            ศูนย์รวมบริการและข้อมูลสนับสนุนนักศึกษาแบบครบวงจร 
+            เพื่อช่วยให้คุณวางแผนการเรียนและพัฒนาศักยภาพได้อย่างเต็มที่
+          </p>
+          {!currentUser && (
+            <button 
+              onClick={() => navigateTo('login')}
+              className="bg-[#00246B] hover:bg-blue-800 text-white px-6 py-3 rounded-lg shadow-md font-medium transition-all transform hover:-translate-y-0.5"
+            >
+              เข้าสู่ระบบนักศึกษา
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Menu Grid */}
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+        <span className="bg-[#00246B] w-2 h-6 rounded-full mr-3 inline-block"></span>
+        บริการสำหรับนักศึกษา
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {menuCards.map((card, idx) => (
+          <div 
+            key={idx}
+            onClick={card.action}
+            className={`
+              cursor-pointer group rounded-2xl p-6 transition-all duration-300
+              border-2 hover:shadow-xl bg-white
+              ${card.primary 
+                ? 'border-blue-200 hover:border-[#00246B] shadow-sm' 
+                : 'border-transparent hover:border-slate-200 shadow-sm'}
+            `}
+          >
+            <div className="flex items-start space-x-5">
+              <div className={`
+                p-4 rounded-xl shrink-0 transition-transform group-hover:scale-110 duration-300
+                ${card.primary ? 'bg-blue-50' : 'bg-slate-50'}
+              `}>
+                {card.icon}
+              </div>
+              <div>
+                <h3 className={`text-xl font-bold mb-2 ${card.primary ? 'text-[#00246B]' : 'text-slate-800'}`}>
+                  {card.title}
+                </h3>
+                <p className="text-slate-500 leading-relaxed text-sm">
+                  {card.description}
+                </p>
+                {card.primary && (
+                  <div className="mt-4 inline-flex items-center text-sm font-semibold text-blue-600 group-hover:text-[#00246B]">
+                    เข้าใช้งานระบบ &rarr;
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 2. Login View
+// ==========================================
+function LoginView({ navigateTo, usersDb, setCurrentUser }) {
+  const [studentId, setStudentId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Form validation
+    if (!studentId || !password) {
+      setError('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน');
+      return;
+    }
+
+    // Auth logic (Mock)
+    const user = usersDb.find(u => u.studentId === studentId && u.password === password);
+    
+    if (user) {
+      setCurrentUser(user);
+      navigateTo('booking'); // Redirect to booking system after login
+    } else {
+      setError('รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง หรือคุณอาจจะยังไม่ได้สมัครสมาชิก');
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto mt-10 animate-in slide-in-from-bottom-4 duration-500">
+      <button 
+        onClick={() => navigateTo('home')}
+        className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors"
+      >
+        <ChevronLeft size={20} />
+        <span>กลับหน้าหลัก</span>
+      </button>
+
+      <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-50 text-[#00246B] rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800">เข้าสู่ระบบ</h2>
+          <p className="text-slate-500 mt-2 text-sm">ระบบนัดหมายให้คำปรึกษา AMPH Insight Hub</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm flex items-start space-x-2">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Username (รหัสนักศึกษา)</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none transition-all"
+                placeholder="เช่น 6401xxx"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password (รหัสผ่าน)</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="password"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none transition-all"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[#00246B] hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg shadow-md transition-all mt-4"
+          >
+            เข้าสู่ระบบ
+          </button>
+        </form>
+
+        <div className="mt-8 text-center text-sm text-slate-600 border-t pt-6">
+          ยังไม่มีบัญชีผู้ใช้?{' '}
+          <button 
+            onClick={() => navigateTo('register')}
+            className="text-[#00246B] font-semibold hover:underline"
+          >
+            สมัครสมาชิกใหม่ (ด้วย Mahidol Mail)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 3. Register View
+// ==========================================
+function RegisterView({ navigateTo, usersDb, setUsersDb }) {
+  const [formData, setFormData] = useState({
+    studentId: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: ''
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({...formData, [e.target.name]: e.target.value});
+  };
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const { studentId, email, password, confirmPassword, firstName, lastName } = formData;
+
+    // 1. Check empty fields
+    if (!studentId || !email || !password || !confirmPassword || !firstName || !lastName) {
+      setError('กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง');
+      return;
+    }
+
+    // 2. Validate Email (Must be Mahidol Domain)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@(student\.mahidol\.ac\.th|mahidol\.edu|mahidol\.ac\.th)$/i;
+    if (!emailRegex.test(email)) {
+      setError('กรุณาใช้อีเมลของมหาวิทยาลัยมหิดลเท่านั้น (เช่น @student.mahidol.ac.th)');
+      return;
+    }
+
+    // 3. Validate Password match
+    if (password !== confirmPassword) {
+      setError('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+      return;
+    }
+
+    // 4. Check if Student ID already exists
+    if (usersDb.some(u => u.studentId === studentId)) {
+      setError('รหัสนักศึกษานี้ได้ทำการสมัครสมาชิกไปแล้ว');
+      return;
+    }
+
+    // Success - Create user
+    const newUser = {
+      studentId,
+      email,
+      password,
+      name: `${firstName} ${lastName}`
+    };
+
+    setUsersDb([...usersDb, newUser]);
+    setSuccess(true);
+    
+    // Auto redirect after 2 seconds
+    setTimeout(() => {
+      navigateTo('login');
+    }, 2500);
+  };
+
+  if (success) {
+    return (
+      <div className="max-w-md mx-auto mt-20 text-center animate-in zoom-in duration-300">
+        <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle size={40} />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">สมัครสมาชิกสำเร็จ!</h2>
+        <p className="text-slate-600 mb-6">คุณสามารถใช้รหัสนักศึกษาเพื่อเข้าสู่ระบบได้เลย</p>
+        <p className="text-sm text-slate-400">กำลังพากลับไปยังหน้าเข้าสู่ระบบ...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg mx-auto mt-6 animate-in slide-in-from-bottom-4 duration-500 mb-12">
+      <button 
+        onClick={() => navigateTo('login')}
+        className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors"
+      >
+        <ChevronLeft size={20} />
+        <span>กลับไปหน้าเข้าสู่ระบบ</span>
+      </button>
+
+      <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800">ลงทะเบียนเข้าใช้งานระบบ</h2>
+          <p className="text-slate-500 mt-2 text-sm">สำหรับนักศึกษาที่ยังไม่มีบัญชีผู้ใช้</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm flex items-start space-x-2">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">ชื่อ</label>
+              <input
+                type="text"
+                name="firstName"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                value={formData.firstName}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">นามสกุล</label>
+              <input
+                type="text"
+                name="lastName"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                value={formData.lastName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">รหัสนักศึกษา (Username สำหรับเข้าสู่ระบบ)</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                name="studentId"
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                placeholder="เช่น 6401xxx"
+                value={formData.studentId}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Mahidol Email</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="email"
+                name="email"
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                placeholder="your.name@student.mahidol.ac.th"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">* ต้องใช้อีเมลของมหาวิทยาลัยเท่านั้น</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">รหัสผ่าน</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-slate-400" />
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">ยืนยันรหัสผ่าน</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-slate-400" />
+                </div>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] focus:border-[#00246B] outline-none"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg shadow-md transition-all mt-6"
+          >
+            สมัครสมาชิก
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 4. Booking System View (Logged in required)
+// ==========================================
+function BookingView({ currentUser, navigateTo }) {
+  const [bookingState, setBookingState] = useState('form'); // 'form', 'success'
+  const [formData, setFormData] = useState({
+    advisor: '',
+    date: '',
+    time: '',
+    topic: '',
+    details: ''
+  });
+
+  // Security Check (If reached here without login)
+  if (!currentUser) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-xl text-red-600 mb-4">กรุณาเข้าสู่ระบบก่อนเข้าใช้งาน</h2>
+        <button 
+          onClick={() => navigateTo('login')}
+          className="bg-[#00246B] text-white px-6 py-2 rounded-lg"
+        >
+          ไปหน้าเข้าสู่ระบบ
+        </button>
+      </div>
+    );
+  }
+
+  const advisors = [
+    "ผศ.ดร. ใจดี มีเมตตา (ปรึกษาด้านวิชาการ)",
+    "อ. สมชาย รักการเรียน (ปรึกษาการทำวิจัย)",
+    "ดร. นลินี จิตใจงาม (ปรึกษาการใช้ชีวิต/ความเครียด)",
+    "อ. พิทยา อนาคตไกล (ปรึกษาด้านอาชีพ/ทุน)"
+  ];
+
+  const timeSlots = [
+    "09:00 - 10:00",
+    "10:00 - 11:00",
+    "13:00 - 14:00",
+    "14:00 - 15:00",
+    "15:00 - 16:00"
+  ];
+
+  const handleChange = (e) => {
+    setFormData({...formData, [e.target.name]: e.target.value});
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.advisor || !formData.date || !formData.time || !formData.topic) {
+      alert("กรุณากรอกข้อมูลบังคับ (*) ให้ครบถ้วน");
+      return;
+    }
+    // Simulate API call
+    setTimeout(() => {
+      setBookingState('success');
+    }, 500);
+  };
+
+  if (bookingState === 'success') {
+    return (
+      <div className="max-w-2xl mx-auto mt-10 text-center animate-in zoom-in duration-300 bg-white p-12 rounded-2xl shadow-sm border border-slate-100">
+        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle size={48} />
+        </div>
+        <h2 className="text-3xl font-bold text-slate-800 mb-4">บันทึกการนัดหมายสำเร็จ!</h2>
+        <div className="bg-slate-50 p-6 rounded-lg text-left mb-8 max-w-md mx-auto">
+          <p className="mb-2"><span className="font-semibold text-slate-600">อาจารย์:</span> {formData.advisor}</p>
+          <p className="mb-2"><span className="font-semibold text-slate-600">วัน/เวลา:</span> {formData.date} | {formData.time}</p>
+          <p className="mb-2"><span className="font-semibold text-slate-600">เรื่อง:</span> {formData.topic}</p>
+        </div>
+        <p className="text-slate-500 mb-8">ระบบได้ส่งอีเมลยืนยันการนัดหมายไปยัง {currentUser.email} แล้ว</p>
+        <button 
+          onClick={() => navigateTo('home')}
+          className="bg-[#00246B] hover:bg-blue-800 text-white font-medium px-8 py-3 rounded-lg shadow-md transition-all"
+        >
+          กลับสู่หน้าหลัก
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center space-x-3 mb-8 border-b pb-4">
+        <CalendarDays size={32} className="text-[#00246B]" />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">ระบบปฏิทินการให้คำปรึกษา</h1>
+          <p className="text-slate-500">สำหรับนัดหมายอาจารย์ที่ปรึกษาล่วงหน้า</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Col - Student Info */}
+        <div className="lg:col-span-1">
+          <div className="bg-[#00246B] text-white p-6 rounded-2xl shadow-md">
+            <h3 className="text-lg font-semibold mb-4 border-b border-white/20 pb-2">ข้อมูลนักศึกษา</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-blue-200 text-xs">ชื่อ-นามสกุล</p>
+                <p className="font-medium">{currentUser.name || 'ชื่อนักศึกษา ตัวอย่าง'}</p>
+              </div>
+              <div>
+                <p className="text-blue-200 text-xs">รหัสนักศึกษา</p>
+                <p className="font-medium">{currentUser.studentId}</p>
+              </div>
+              <div>
+                <p className="text-blue-200 text-xs">อีเมลติดต่อ</p>
+                <p className="font-medium text-sm truncate">{currentUser.email || 'student@student.mahidol.ac.th'}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 text-sm">
+            <strong>ข้อควรรู้:</strong> กรุณานัดหมายล่วงหน้าอย่างน้อย 1 วันทำการ และหากต้องการยกเลิก กรุณาแจ้งล่วงหน้าอย่างน้อย 2 ชั่วโมง
+          </div>
+        </div>
+
+        {/* Right Col - Booking Form */}
+        <div className="lg:col-span-2">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 className="text-xl font-bold text-slate-800 mb-6">ฟอร์มทำรายการนัดหมาย</h3>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Advisor Selection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  1. เลือกอาจารย์ที่ปรึกษา <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User size={18} className="text-slate-400" />
+                  </div>
+                  <select 
+                    name="advisor"
+                    value={formData.advisor}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] outline-none appearance-none bg-white"
+                  >
+                    <option value="">-- กรุณาเลือก --</option>
+                    {advisors.map((adv, idx) => (
+                      <option key={idx} value={adv}>{adv}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    2. วันที่ต้องการนัดหมาย <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="date" 
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] outline-none"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    3. เวลา <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Clock size={18} className="text-slate-400" />
+                    </div>
+                    <select 
+                      name="time"
+                      value={formData.time}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] outline-none appearance-none bg-white"
+                    >
+                      <option value="">-- เลือกเวลา --</option>
+                      {timeSlots.map((time, idx) => (
+                        <option key={idx} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Topic */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  4. หัวข้อที่ต้องการปรึกษา <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FileText size={18} className="text-slate-400" />
+                  </div>
+                  <input 
+                    type="text" 
+                    name="topic"
+                    value={formData.topic}
+                    onChange={handleChange}
+                    placeholder="เช่น ปรึกษาแผนการเรียนในเทอมถัดไป, ความเครียดจากการสอบ"
+                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Details */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  รายละเอียดเพิ่มเติม (ถ้ามี)
+                </label>
+                <textarea 
+                  name="details"
+                  value={formData.details}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="ระบุข้อมูลที่ต้องการให้อาจารย์ทราบเบื้องต้น..."
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#00246B] outline-none resize-none"
+                ></textarea>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
+                <button 
+                  type="button"
+                  onClick={() => navigateTo('home')}
+                  className="px-6 py-2.5 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#00246B] text-white rounded-lg hover:bg-blue-800 font-medium shadow-md transition-colors"
+                >
+                  ยืนยันการนัดหมาย
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 5. Research Repository View
+// ==========================================
+function ResearchView({ navigateTo }) {
+  const [activeTab, setActiveTab] = useState('theses'); // 'theses' or 'is'
+
+  // Mock Data for Researches
+  const researchData = {
+    theses: {
+      current: [
+        { id: 1, title: "ปัจจัยที่มีผลต่อภาวะซึมเศร้าในนักศึกษาแพทย์ชั้นคลินิก", author: "นศ.พ. สมรักษ์ ใจดี", year: "2568", category: "สุขภาพจิต" },
+        { id: 2, title: "การพัฒนาระบบ AI เพื่อการวินิจฉัยโรคผิวหนังเบื้องต้น", author: "นศ. นวัตกรรม เทคโนโลยี", year: "2568", category: "เทคโนโลยีการแพทย์" }
+      ],
+      past: [
+        { id: 3, title: "ผลกระทบของฝุ่น PM 2.5 ต่อระบบทางเดินหายใจในเด็กวัยเรียน", author: "นศ. อากาศ สดใส", year: "2567", category: "ระบาดวิทยา" },
+        { id: 4, title: "พฤติกรรมการบริโภคอาหารเสริมของวัยรุ่นไทยในเขตกรุงเทพมหานคร", author: "นศ. โภชนา ดีเยี่ยม", year: "2566", category: "โภชนาการ" },
+        { id: 5, title: "คุณภาพการนอนหลับและผลสัมฤทธิ์ทางการเรียนของนักศึกษาพยาบาล", author: "นศ.พย. นิทรา ฝันดี", year: "2565", category: "คุณภาพชีวิต" }
+      ]
+    },
+    is: {
+      current: [
+        { id: 6, title: "แนวทางการจัดการขยะติดเชื้อในคลินิกทันตกรรมขนาดเล็ก", author: "นศ. สะอาด ปลอดภัย", year: "2568", category: "อนามัยสิ่งแวดล้อม" },
+        { id: 7, title: "ความชุกของภาวะออฟฟิศซินโดรมในบุคลากรสายสนับสนุนมหาวิทยาลัย", author: "นศ. นั่งนาน ปวดหลัง", year: "2568", category: "อาชีวอนามัย" }
+      ],
+      past: [
+        { id: 8, title: "การประเมินความพึงพอใจต่อบริการสุขภาพจิตผ่านระบบ Telemedicine", author: "นศ. ออนไลน์ สะดวกดี", year: "2567", category: "บริการสุขภาพ" }
+      ]
+    }
+  };
+
+  const renderResearchCards = (items) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      {items.map(item => (
+        <div key={item.id} className="bg-white border border-slate-200 p-5 rounded-xl hover:shadow-md transition-shadow group cursor-pointer">
+          <div className="flex justify-between items-start mb-3">
+            <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+              ปี {item.year}
+            </span>
+            <span className="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full flex items-center">
+              <Award size={12} className="mr-1" />
+              {item.category}
+            </span>
+          </div>
+          <h4 className="font-bold text-slate-800 text-lg mb-2 group-hover:text-[#00246B] transition-colors line-clamp-2">
+            {item.title}
+          </h4>
+          <p className="text-slate-500 text-sm flex items-center mt-4">
+            <User size={14} className="mr-1.5" /> {item.author}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <button 
+        onClick={() => navigateTo('home')}
+        className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors"
+      >
+        <ChevronLeft size={20} />
+        <span>กลับหน้าหลัก</span>
+      </button>
+
+      {/* Header Section */}
+      <div className="bg-indigo-900 text-white rounded-2xl p-8 mb-8 relative overflow-hidden shadow-lg">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full -mr-20 -mt-20 opacity-30 blur-3xl"></div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/20">
+            <BookOpen size={32} className="text-indigo-100" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">คลังวิจัยนักศึกษา</h1>
+            <p className="text-indigo-200 text-lg max-w-2xl leading-relaxed">
+              แหล่งสืบค้นและเรียนรู้องค์ความรู้จากงานวิจัยนักศึกษาที่ผ่านการคัดสรร แยกตามปีการศึกษาและหมวดหมู่สุขภาพที่น่าสนใจ
+            </p>
+          </div>
+        </div>
+        
+        {/* Search Bar (Mock UI) */}
+        <div className="relative mt-8 max-w-xl z-10">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search size={20} className="text-indigo-300" />
+          </div>
+          <input
+            type="text"
+            className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-indigo-200 focus:outline-none focus:bg-white/20 focus:border-white/40 transition-all backdrop-blur-sm"
+            placeholder="ค้นหาชื่อเรื่อง, ผู้แต่ง, หรือคำสำคัญ..."
+          />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-2 bg-slate-200/60 p-1.5 rounded-xl mb-8 w-fit">
+        <button
+          onClick={() => setActiveTab('theses')}
+          className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center ${
+            activeTab === 'theses' 
+              ? 'bg-white text-[#00246B] shadow-sm' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+          }`}
+        >
+          <Award size={18} className="mr-2" />
+          1) AMPH e-Theses
+        </button>
+        <button
+          onClick={() => setActiveTab('is')}
+          className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center ${
+            activeTab === 'is' 
+              ? 'bg-white text-[#00246B] shadow-sm' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+          }`}
+        >
+          <FileText size={18} className="mr-2" />
+          2) AMPH e-IS
+        </button>
+      </div>
+
+      {/* Content Section */}
+      <div className="space-y-10">
+        {/* Current Works */}
+        <section>
+          <div className="flex items-center space-x-2 mb-2 border-b border-slate-200 pb-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <CheckCircle size={18} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800">ผลงานปัจจุบัน (ปีการศึกษาล่าสุด)</h2>
+          </div>
+          {renderResearchCards(researchData[activeTab].current)}
+        </section>
+
+        {/* Past Works */}
+        <section>
+          <div className="flex items-center space-x-2 mb-2 border-b border-slate-200 pb-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-slate-600">
+              <Archive size={18} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800">ผลงานที่ผ่านมา (ย้อนหลัง)</h2>
+          </div>
+          {renderResearchCards(researchData[activeTab].past)}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 6. Achievements View
+// ==========================================
+function AchievementsView({ navigateTo }) {
+  const [activeTab, setActiveTab] = useState('publications'); // 'publications', 'awards', 'stories', 'proceedings'
+
+  const mockData = {
+    publications: {
+      current: [
+        { id: 1, title: "Impact of Urban Green Spaces on Mental Health during the Pandemic", authors: "สมหญิง รักเรียน และคณะ", journal: "Journal of Public Health", year: "2026", status: "ตีพิมพ์แล้ว" },
+      ],
+      past: [
+        { id: 2, title: "Prevalence of E-cigarette Use Among High School Students", authors: "นายยอดชาย ใจสู้", journal: "Asian Journal of Health Sciences", year: "2025", status: "ตีพิมพ์แล้ว" },
+        { id: 3, title: "Effectiveness of Telemedicine in Rural Areas of Thailand", authors: "นางสาวฟ้าใส ไปได้ดี", journal: "Global Health Review", year: "2024", status: "ตีพิมพ์แล้ว" },
+      ]
+    },
+    awards: [
+      { id: 4, title: "The Best Public Health Innovation Award", project: "แอปพลิเคชันคัดกรองภาวะซึมเศร้าด้วย AI", winner: "ทีม นวัตกรรมก้าวไกล", event: "National Health Tech Expo 2026" },
+      { id: 5, title: "รางวัลชนะเลิศ การประกวดนวัตกรรมสร้างเสริมสุขภาพ", project: "ชุดตรวจวัดคุณภาพน้ำดื่มแบบพกพา", winner: "นายน้ำใส ไหลเย็น", event: "สสส. Health Innovation 2025" }
+    ],
+    stories: [
+      { id: 6, name: "นางสาวศิริพร พากเพียร", quote: "จากจุดเริ่มต้นเล็กๆ ในห้องเรียน สู่นักวิจัยสาธารณสุขระดับชาติ", detail: "ศิริพร ได้นำโปรเจกต์จบไปต่อยอดจนได้ตีพิมพ์ในวารสารนานาชาติ และปัจจุบันได้รับทุนเรียนต่อ ป.โท ที่ต่างประเทศ", img: "👩🏻‍🎓" },
+      { id: 7, name: "นายเก่งกาจ กล้าหาญ", quote: "ความล้มเหลวคือบทเรียนที่สอนให้เราพัฒนางานให้ดีขึ้น", detail: "ผู้ริเริ่มโครงการรณรงค์ลดบุหรี่ไฟฟ้าในชุมชน จนได้รับรางวัลเยาวชนดีเด่นแห่งชาติ", img: "👨🏻‍🎓" }
+    ],
+    proceedings: [
+      { id: 8, title: "การนำเสนอผลงานวิจัยแบบปากเปล่า (Oral Presentation) ระดับดีเด่น", topic: "การจัดการขยะอิเล็กทรอนิกส์ในระดับครัวเรือน", presenter: "นางสาวรักษ์โลก ใบเขียว", stage: "การประชุมวิชาการสาธารณสุขแห่งชาติ ครั้งที่ 20" },
+      { id: 9, title: "รางวัล Poster Presentation ยอดเยี่ยม", topic: "รูปแบบการบริโภคโซเดียมในวัยทำงาน", presenter: "นายสุขภาพ ดีพร้อม", stage: "Thailand Public Health Conference 2025" }
+    ]
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <button onClick={() => navigateTo('home')} className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors">
+        <ChevronLeft size={20} /><span>กลับหน้าหลัก</span>
+      </button>
+
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-2xl p-8 mb-8 relative overflow-hidden shadow-lg">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-20 -mt-20 opacity-10 blur-3xl"></div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/30">
+            <Trophy size={32} className="text-amber-50" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">ความสำเร็จ และความภาคภูมิใจ</h1>
+            <p className="text-amber-50 text-lg max-w-2xl leading-relaxed">
+              เชิดชูเกียรติผลงานคุณภาพที่ได้รับการตีพิมพ์ในระดับวารสารวิชาการ รางวัลจากเวทีระดับชาติ และเรื่องราวของความสำเร็จ
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 bg-slate-200/60 p-1.5 rounded-xl mb-8 w-fit">
+        {[
+          { id: 'publications', icon: <BookOpen size={18}/>, label: '1) Research Publications' },
+          { id: 'awards', icon: <Medal size={18}/>, label: '2) Award-Winning Research' },
+          { id: 'stories', icon: <Star size={18}/>, label: '3) Success Stories' },
+          { id: 'proceedings', icon: <Award size={18}/>, label: '4) Proceeding' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center ${
+              activeTab === tab.id 
+                ? 'bg-white text-amber-700 shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+            }`}
+          >
+            <span className="mr-2">{tab.icon}</span> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content based on Tab */}
+      <div className="space-y-8 pb-10">
+        
+        {/* Tab 1: Publications */}
+        {activeTab === 'publications' && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-300">
+            <section>
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                <span className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></span> ผลงานปัจจุบัน
+              </h2>
+              <div className="space-y-4">
+                {mockData.publications.current.map(item => (
+                  <div key={item.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-lg text-slate-800">{item.title}</h4>
+                      <p className="text-slate-600 mt-1">{item.authors}</p>
+                      <p className="text-sm text-slate-500 mt-2 font-medium">วารสาร: {item.journal}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold mb-2">ปี {item.year}</span>
+                      <p className="text-sm text-slate-500">{item.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                <span className="w-3 h-3 bg-slate-400 rounded-full mr-3"></span> ผลงานที่ผ่านมา
+              </h2>
+              <div className="space-y-4">
+                {mockData.publications.past.map(item => (
+                  <div key={item.id} className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-lg text-slate-700">{item.title}</h4>
+                      <p className="text-slate-500 mt-1">{item.authors}</p>
+                      <p className="text-sm text-slate-400 mt-2 font-medium">วารสาร: {item.journal}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold mb-2">ปี {item.year}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* Tab 2: Award-Winning */}
+        {activeTab === 'awards' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-300">
+            {mockData.awards.map(item => (
+              <div key={item.id} className="bg-white p-6 rounded-xl border-t-4 border-amber-500 shadow-md">
+                <Medal size={32} className="text-amber-500 mb-4" />
+                <h4 className="font-bold text-xl text-slate-800 mb-2">{item.title}</h4>
+                <p className="text-slate-700 font-medium mb-1">ผลงาน: {item.project}</p>
+                <p className="text-slate-500 text-sm mb-4">โดย: {item.winner}</p>
+                <div className="bg-amber-50 text-amber-800 text-sm px-3 py-2 rounded-lg font-medium inline-block">
+                  เวที: {item.event}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tab 3: Success Stories */}
+        {activeTab === 'stories' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-300">
+            {mockData.stories.map(item => (
+              <div key={item.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
+                <div className="text-4xl absolute top-6 right-6 opacity-20">"</div>
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl shrink-0">
+                    {item.img}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-slate-800">{item.name}</h4>
+                    <p className="text-amber-600 text-sm font-semibold">ศิษย์เก่า / นักศึกษา</p>
+                  </div>
+                </div>
+                <p className="text-slate-700 font-medium italic mb-3">"{item.quote}"</p>
+                <p className="text-slate-500 text-sm leading-relaxed">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tab 4: Proceedings */}
+        {activeTab === 'proceedings' && (
+          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+            {mockData.proceedings.map(item => (
+              <div key={item.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4">
+                <div className="bg-blue-50 text-blue-600 p-3 rounded-xl shrink-0">
+                  <Award size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg text-[#00246B] mb-1">{item.title}</h4>
+                  <p className="text-slate-800 font-medium mb-1">หัวข้อ: {item.topic}</p>
+                  <p className="text-slate-600 text-sm mb-2">ผู้นำเสนอ: {item.presenter}</p>
+                  <p className="text-slate-500 text-sm inline-flex items-center bg-slate-50 px-3 py-1 rounded-md border border-slate-100">
+                    <MapPin size={14} className="mr-1.5" /> {item.stage}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 7. Faculty View
+// ==========================================
+function FacultyView({ navigateTo }) {
+  const facultyMembers = [
+    { id: 1, name: "ศ.ดร. นพ. สาธารณสุข ก้าวหน้า", role: "ประธานหลักสูตร", expertise: "ระบาดวิทยาและนโยบายสุขภาพ", research: "การพัฒนาระบบเฝ้าระวังโรคติดต่ออุบัติใหม่ระดับภูมิภาค" },
+    { id: 2, name: "รศ.ดร. วิจัย แม่นยำ", role: "อาจารย์ประจำหลักสูตร", expertise: "ชีวสถิติและการวิเคราะห์ข้อมูลขนาดใหญ่", research: "การประยุกต์ใช้ AI ในการคาดการณ์แนวโน้มสุขภาพ" },
+    { id: 3, name: "ผศ.ดร. สิ่งแวดล้อม ยั่งยืน", role: "อาจารย์ประจำหลักสูตร", expertise: "อนามัยสิ่งแวดล้อมและอาชีวอนามัย", research: "ผลกระทบของการเปลี่ยนแปลงสภาพภูมิอากาศต่อสุขภาพชุมชน" },
+    { id: 4, name: "อ.ดร. สุขภาพจิต สมบูรณ์", role: "อาจารย์ประจำหลักสูตร", expertise: "พฤติกรรมศาสตร์และสุขภาพจิต", research: "ปัจจัยเชิงสังคมที่มีผลต่อความเครียดในวัยทำงาน" },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <button onClick={() => navigateTo('home')} className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors">
+        <ChevronLeft size={20} /><span>กลับหน้าหลัก</span>
+      </button>
+
+      <div className="bg-[#004D40] text-white rounded-2xl p-8 mb-10 relative overflow-hidden shadow-lg">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500 rounded-full -mr-20 -mt-20 opacity-30 blur-3xl"></div>
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold mb-3 flex items-center">
+            <Microscope size={32} className="mr-3 text-teal-300" />
+            ทำเนียบคณาจารย์ผู้เชี่ยวชาญ (AMPH Faculty)
+          </h1>
+          <p className="text-teal-100 text-lg max-w-3xl leading-relaxed">
+            เจาะลึกทิศทางการขับเคลื่อนงานวิจัยเชิงรุกจากคณาจารย์ผู้ทรงคุณวุฒิ เพื่อตอบโจทย์ปัญหาสาธารณสุขในยุคปัจจุบันและอนาคต
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
+        {facultyMembers.map(member => (
+          <div key={member.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-5">
+            <div className="w-24 h-24 bg-slate-200 rounded-full flex-shrink-0 mx-auto sm:mx-0 overflow-hidden flex items-center justify-center text-slate-400">
+              <User size={40} />
+            </div>
+            <div className="text-center sm:text-left">
+              <h3 className="font-bold text-xl text-slate-800">{member.name}</h3>
+              <p className="text-teal-600 text-sm font-semibold mb-3">{member.role}</p>
+              
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-semibold text-slate-700 block mb-0.5">ความเชี่ยวชาญ:</span>
+                  <span className="text-slate-600">{member.expertise}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-700 block mb-0.5">ทิศทางงานวิจัยเชิงรุก:</span>
+                  <span className="text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 block mt-1">
+                    {member.research}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 8. Alumni View
+// ==========================================
+function AlumniView({ navigateTo }) {
+  const alumniList = [
+    { id: 1, name: "นายเครือข่าย กว้างไกล", year: "2565", role: "นักวิชาการสาธารณสุขปฏิบัติการ", workplace: "กรมควบคุมโรค กระทรวงสาธารณสุข" },
+    { id: 2, name: "นางสาวศิษย์เก่า รุ่นพี่", year: "2564", role: "ผู้จัดการโครงการสุขภาพ", workplace: "องค์การอนามัยโลก (WHO) ประเทศไทย" },
+    { id: 3, name: "นายประสบการณ์ ล้ำค่า", year: "2566", role: "นักวิจัยด้านระบาดวิทยา", workplace: "ศูนย์วิจัยสุขภาพชุมชน มหาวิทยาลัยมหิดล" },
+    { id: 4, name: "นางสาวคอนเนคชั่น ดีเยี่ยม", year: "2563", role: "นักประเมินความเสี่ยงด้านสิ่งแวดล้อม", workplace: "บริษัทเอกชนด้านสิ่งแวดล้อมและพลังงาน" },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <button onClick={() => navigateTo('home')} className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors">
+        <ChevronLeft size={20} /><span>กลับหน้าหลัก</span>
+      </button>
+
+      <div className="bg-gradient-to-r from-cyan-700 to-blue-600 text-white rounded-2xl p-8 mb-8 relative overflow-hidden shadow-lg">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl font-bold mb-3 flex items-center">
+              <Users size={32} className="mr-3 text-cyan-200" />
+              ทำเนียบศิษย์เก่า (Alumni Network)
+            </h1>
+            <p className="text-cyan-100 text-lg leading-relaxed mb-6">
+              เชื่อมต่อเครือข่ายบัณฑิตสาธารณสุข แลกเปลี่ยนประสบการณ์การทำงาน และโอกาสในการศึกษาต่อ
+            </p>
+          </div>
+          <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/20 text-center min-w-[200px]">
+            <p className="text-cyan-100 text-sm mb-1">ศิษย์เก่าในระบบ</p>
+            <p className="text-4xl font-bold text-white">1,250+</p>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative mt-4 z-10">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search size={20} className="text-cyan-300" />
+          </div>
+          <input
+            type="text"
+            className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-cyan-200 focus:outline-none focus:bg-white/20 focus:border-white/40 transition-all backdrop-blur-sm"
+            placeholder="ค้นหาชื่อ, รุ่นปีการศึกษา, หรือสถานที่ทำงาน..."
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 pb-10">
+        {alumniList.map(alumni => (
+          <div key={alumni.id} className="bg-white p-5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all flex items-start space-x-4">
+            <div className="w-14 h-14 bg-cyan-50 rounded-full flex-shrink-0 flex items-center justify-center text-cyan-600 font-bold text-xl">
+              {alumni.name.charAt(0)}{alumni.name.charAt(7)}
+            </div>
+            <div>
+              <div className="flex justify-between items-start">
+                <h4 className="font-bold text-lg text-slate-800">{alumni.name}</h4>
+                <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-md">
+                  รุ่นปี {alumni.year}
+                </span>
+              </div>
+              <p className="text-cyan-700 text-sm font-medium mt-1 flex items-center">
+                <Briefcase size={14} className="mr-1.5" /> {alumni.role}
+              </p>
+              <p className="text-slate-500 text-sm mt-1 flex items-center">
+                <MapPin size={14} className="mr-1.5" /> {alumni.workplace}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 9. Contact View
+// ==========================================
+function ContactView({ navigateTo }) {
+  return (
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <button onClick={() => navigateTo('home')} className="flex items-center text-slate-500 hover:text-[#00246B] mb-6 transition-colors">
+        <ChevronLeft size={20} /><span>กลับหน้าหลัก</span>
+      </button>
+
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-[#00246B] mb-3">ติดต่อเรา (Contact Us)</h1>
+        <p className="text-slate-600 text-lg">ช่องทางการสื่อสารข้อมูลกับหลักสูตรฯ และสถานที่ตั้งโครงการจัดตั้งวิทยาเขตอำนาจเจริญ</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
+        
+        {/* Contact Information */}
+        <div className="space-y-6">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 h-full">
+            <h3 className="text-xl font-bold text-slate-800 mb-6 border-b pb-4">ข้อมูลการติดต่อ</h3>
+            
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center shrink-0 mr-4">
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-800">ที่ตั้งโครงการจัดตั้งวิทยาเขตอำนาจเจริญ</h4>
+                  <p className="text-slate-600 mt-1 text-sm leading-relaxed">
+                    มหาวิทยาลัยมหิดล โครงการจัดตั้งวิทยาเขตอำนาจเจริญ<br/>
+                    259 หมู่ 13 ตำบลโนนหนามแท่ง อำเภอเมือง<br/>
+                    จังหวัดอำนาจเจริญ 37000
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center shrink-0 mr-4">
+                  <Phone size={20} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-800">โทรศัพท์</h4>
+                  <p className="text-slate-600 mt-1 text-sm">045-523-211 ต่อ 1000</p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center shrink-0 mr-4">
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-800">อีเมลหลักสูตร</h4>
+                  <p className="text-slate-600 mt-1 text-sm">amph_admin@mahidol.ac.th</p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center shrink-0 mr-4">
+                  <Globe size={20} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-800">เว็บไซต์หลัก</h4>
+                  <a href="#" className="text-blue-600 hover:underline mt-1 text-sm block">am.mahidol.ac.th</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Map Area */}
+        <div className="bg-slate-200 rounded-2xl min-h-[400px] flex items-center justify-center border border-slate-300 relative overflow-hidden group">
+          <div className="text-center p-6 relative z-10">
+            <Map size={48} className="text-slate-400 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" />
+            <h3 className="text-xl font-bold text-slate-700 mb-2">แผนที่ Google Maps</h3>
+            <p className="text-slate-500 text-sm">(พื้นที่สำหรับฝัง iframe แผนที่จริง)</p>
+          </div>
+          {/* Decorative Pattern to look like a map placeholder */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 to-transparent background-size-4" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
